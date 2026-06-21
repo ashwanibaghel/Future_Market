@@ -1,0 +1,25 @@
+# Python
+**/__pycache__/
+**/.venv/
+**/.pytest_cache/
+**/*.pyc
+**/*.db
+**/*.db-wal
+**/*.db-shm
+**/*.db.bak
+**/quant_test.json
+
+# Node
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
+**/.next-env.d.ts
+.next/
+
+# IDE / System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+backend.tar.gz

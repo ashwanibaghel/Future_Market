@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --bg-base:       #060810;
+  --bg-surface:    #0d1117;
+  --bg-elevated:   #131920;
+  --border-subtle: #1e2433;
+  --border-strong: #2a3347;
+  --accent-indigo: #6366f1;
+  --accent-emerald:#10b981;
+  --accent-rose:   #f43f5e;
+  --accent-amber:  #f59e0b;
+  --text-primary:  #e2e8f0;
+  --text-secondary:#94a3b8;
+  --text-muted:    #475569;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* JetBrains Mono for all numeric/price displays */
+.font-mono {
+  font-family: var(--font-mono), 'JetBrains Mono', 'Courier New', monospace !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #3d4f6a; }
+
+a, button { transition: all 0.15s ease; }
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-count { animation: count-up 0.3s ease forwards; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px 0px rgba(99,102,241,0.4); }
+  50%       { box-shadow: 0 0 18px 4px rgba(99,102,241,0.6); }
+}
+.animate-glow { animation: glow-pulse 2s ease-in-out infinite; }

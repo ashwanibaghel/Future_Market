@@ -1,0 +1,38 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Jupyter notebook checkpoints
+*.ipynb_checkpoints/
+
+# Virtual environment
+env/
+venv/
+ENV/
+*.env
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Model files
+*.pkl
+*.h5
+*.joblib
+*.pt
+
+# Large datasets
+*.csv
+*.xlsx
+*.zip
+*.tar.gz
+*.npy
+*.npz
+
+# Logs
+*.log
+
+# VSCode settings (optional)
+.vscode/
+
+# feature_engineered_stock_data.csv
