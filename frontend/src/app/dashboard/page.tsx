@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
 const STATE_CONFIG: Record<string, { gradient: string; border: string; text: string; dot: string }> = {
   "LONG BUILD-UP":   { gradient: "from-emerald-500/15 to-teal-500/5",    border: "border-emerald-500/25", text: "text-emerald-300", dot: "bg-emerald-400" },

@@ -8,7 +8,7 @@ import { Shield, ShieldAlert, TrendingUp, TrendingDown, Activity, BarChart3 } fr
 
 import { useMarketData } from "@/context/MarketDataContext";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
 const STATE_DOT: Record<string, string> = {
   "LONG BUILD-UP":  "bg-emerald-400",
