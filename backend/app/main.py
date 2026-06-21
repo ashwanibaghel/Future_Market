@@ -32,10 +32,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration to allow local frontend access
+# CORS configuration to allow local and production frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict this to the frontend URL
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://future-market-rouge.vercel.app",
+        "http://future-market-rouge.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
