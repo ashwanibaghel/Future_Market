@@ -10,7 +10,7 @@ import {
   Play, Pause, SkipForward, SkipBack, X, Calendar,
 } from "lucide-react";
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
 const STATE_STYLE: Record<string, string> = {
   "LONG BUILD-UP":  "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",

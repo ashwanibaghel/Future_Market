@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import TopBar from "@/components/TopBar";
 import { Lightbulb, Flame, AlertTriangle, MessageSquare, Filter } from "lucide-react";
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
 const CONFIDENCE_STYLE: Record<string, string> = {
   HIGH:   "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",

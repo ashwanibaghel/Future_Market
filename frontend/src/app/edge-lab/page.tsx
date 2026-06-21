@@ -20,6 +20,8 @@ import {
   LineChart 
 } from "lucide-react";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+
 interface EdgeMetric {
   market_state: string;
   samples: number;
@@ -58,7 +60,7 @@ export default function EdgeLabPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/edge-lab?symbol=${symbol}&timeframe=${timeframe}`);
+      const res = await fetch(`${BACKEND_URL}/api/edge-lab?symbol=${symbol}&timeframe=${timeframe}`);
       if (!res.ok) {
         throw new Error("Failed to fetch Edge Lab statistics.");
       }
