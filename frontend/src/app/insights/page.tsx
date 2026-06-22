@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import TopBar from "@/components/TopBar";
 import { Lightbulb, Flame, AlertTriangle, MessageSquare, Filter } from "lucide-react";
+import { formatIST, formatISTDate } from "@/lib/timeUtils";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
@@ -178,9 +179,9 @@ export default function InsightsPage() {
                             <span>{catConf.label}</span>
                             <span className="w-1 h-1 bg-slate-700 rounded-full" />
                             <span className="font-mono normal-case font-medium">
-                              {new Date(ins.timestamp).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                              {formatISTDate(ins.timestamp)}
                               {" "}
-                              {new Date(ins.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              {formatIST(ins.timestamp)}
                             </span>
                           </div>
                         </div>

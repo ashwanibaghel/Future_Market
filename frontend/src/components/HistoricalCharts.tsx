@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Clock, HelpCircle, Layers, Activity, TrendingUp } from "lucide-react";
+import { formatIST } from "@/lib/timeUtils";
 
 interface TrendPoint {
   timestamp: string;
@@ -370,10 +371,7 @@ function SleekLineChart({
             <div className="flex items-center gap-1 font-bold text-slate-500">
               <Clock className="w-3 h-3 text-slate-600" />
               <span>
-                {new Date(activePoint.timestamp).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })}
+                {formatIST(activePoint.timestamp)}
               </span>
             </div>
             
@@ -446,8 +444,7 @@ export default function HistoricalCharts({ trends, loading, error }: HistoricalC
   const formatYPrice = (v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`;
   
   const formatXTick = (ts: string) => {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return formatIST(ts);
   };
 
   return (

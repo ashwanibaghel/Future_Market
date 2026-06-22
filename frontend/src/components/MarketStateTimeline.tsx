@@ -38,11 +38,21 @@ export default function MarketStateTimeline({ timeline = [] }: MarketStateTimeli
   // Ensure we display exactly up to 15 items
   const items = timeline.slice(-15);
 
+  // Backend stores UTC timestamps without 'Z' suffix — append it so browser parses correctly as UTC
+  const toUTC = (isoString?: string) => {
+    if (!isoString) return null;
+    // If already has timezone info, use as-is; otherwise treat as UTC
+    const s = isoString.trim();
+    if (s.endsWith("Z") || s.includes("+") || s.match(/\d{2}:\d{2}:\d{2}-/)) return new Date(s);
+    return new Date(s + "Z");
+  };
+
   const formatTime = (isoString?: string) => {
     if (!isoString) return "—";
     try {
-      const d = new Date(isoString);
-      return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false });
+      const d = toUTC(isoString);
+      if (!d) return "—";
+      return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" });
     } catch (e) {
       return isoString;
     }
@@ -51,8 +61,9 @@ export default function MarketStateTimeline({ timeline = [] }: MarketStateTimeli
   const formatDate = (isoString?: string) => {
     if (!isoString) return "—";
     try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+      const d = toUTC(isoString);
+      if (!d) return "—";
+      return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "Asia/Kolkata" });
     } catch (e) {
       return isoString;
     }

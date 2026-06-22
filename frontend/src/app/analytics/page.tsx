@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import TopBar from "@/components/TopBar";
 import { Shield, ShieldAlert, TrendingUp, TrendingDown, Activity, BarChart3 } from "lucide-react";
+import { formatIST } from "@/lib/timeUtils";
 
 import { useMarketData } from "@/context/MarketDataContext";
 
@@ -175,7 +176,7 @@ export default function AnalyticsPage() {
                             <div
                               key={i}
                               className="flex-1 flex flex-col justify-end group relative"
-                              title={`${new Date(snap.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} | PCR: ${pcr.toFixed(2)} | ${state}`}
+                              title={`${formatIST(snap.timestamp)} | PCR: ${pcr.toFixed(2)} | ${state}`}
                             >
                               <div className={`w-full rounded-t-sm ${color} hover:brightness-125 transition-all`} style={{ height: `${Math.max(heightPct, 2)}%` }} />
                             </div>
@@ -189,9 +190,9 @@ export default function AnalyticsPage() {
                 {/* Time labels */}
                 {oneHourTimeline.length >= 2 && (
                   <div className="flex justify-between ml-12 mt-2 text-[9px] font-mono text-slate-600">
-                    <span>{new Date(oneHourTimeline[0]?.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span>{formatIST(oneHourTimeline[0]?.timestamp)}</span>
                     <span>← 1 Hour →</span>
-                    <span>{new Date(oneHourTimeline[oneHourTimeline.length - 1]?.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                    <span>{formatIST(oneHourTimeline[oneHourTimeline.length - 1]?.timestamp)}</span>
                   </div>
                 )}
 
@@ -306,7 +307,7 @@ export default function AnalyticsPage() {
                             {state.split(" ").map((w: string) => w[0]).join("")}
                           </span>
                           <span className="text-[8px] text-slate-600 font-mono">
-                            {new Date(snap.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            {formatIST(snap.timestamp)}
                           </span>
                           <span className="text-[8px] text-slate-600 font-mono">
                             {snap.pcr?.toFixed(2) ?? ""}

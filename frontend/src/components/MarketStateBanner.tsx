@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Activity, AlertTriangle, TrendingUp, TrendingDown, Clock, Shield } from "lucide-react";
+import { formatIST } from "@/lib/timeUtils";
 
 interface MarketStateBannerProps {
   symbol: string;
@@ -33,17 +34,11 @@ export default function MarketStateBanner({
   const strengthValue = strength ?? "N/A";
   const ivChangeValue = ivChange ?? 4.2;
 
-  // Format timestamp (ISO to human-readable)
+  // Format timestamp — using shared IST utility (backend sends UTC without 'Z')
   const formatTime = (isoString: string) => {
     if (!isoString) return "--:--:--";
     try {
-      const date = new Date(isoString);
-      return date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true
-      });
+      return formatIST(isoString, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
     } catch {
       return isoString;
     }

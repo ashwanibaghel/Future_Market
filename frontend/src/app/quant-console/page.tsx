@@ -9,6 +9,7 @@ import {
   BarChart3, AlertCircle, RefreshCw, ShieldAlert,
   Play, Pause, SkipForward, SkipBack, X, Calendar,
 } from "lucide-react";
+import { formatIST } from "@/lib/timeUtils";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
@@ -186,7 +187,7 @@ export default function QuantConsolePage() {
           spot_change_pct: spot_diff_pct,
           oi_change_pct: 0.0,
           vol_change_pct: 0.0,
-          reason: `Replay Mode: classified as '${curr.market_state}' (${curr.strength} Strength) at ${new Date(curr.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`
+          reason: `Replay Mode: classified as '${curr.market_state}' (${curr.strength} Strength) at ${formatIST(curr.timestamp, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}.`
         },
         timeline: rawTimeline.map(t => ({
           timestamp: t.timestamp,
@@ -354,11 +355,7 @@ export default function QuantConsolePage() {
                     <div className="text-xs font-mono font-bold text-slate-300 flex items-center gap-2">
                       <span className="text-[10px] text-slate-500">PLAYHEAD:</span>
                       <span>
-                        {new Date(replayBuffer[replayIndex].timestamp).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit"
-                        })}
+                        {formatIST(replayBuffer[replayIndex].timestamp, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
                       </span>
                       <span className="text-slate-600">|</span>
                       <span className="text-indigo-400">Step {replayIndex + 1}/{replayBuffer.length}</span>
@@ -799,7 +796,7 @@ export default function QuantConsolePage() {
                         <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-slate-700" />
-                            {new Date(step.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                            {formatIST(step.timestamp, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
                           </span>
                           <span className="font-mono">PCR: {step.pcr.toFixed(2)}</span>
                         </div>
