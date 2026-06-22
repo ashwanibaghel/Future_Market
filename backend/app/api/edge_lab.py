@@ -229,7 +229,7 @@ def get_edge_lab_metrics(
                     continue
                     
                 t0 = s.timestamp
-                spot0 = s.current_spot
+                spot0 = s.spot_price
                 direction = get_prediction_direction(state)
                 
                 # Fetch future spot prices from the 1m grid
