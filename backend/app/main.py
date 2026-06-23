@@ -39,7 +39,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://future-market-rouge.vercel.app",
-        "http://future-market-rouge.vercel.app"
+        "http://future-market-rouge.vercel.app",
+        "https://january-participation-catalogs-journal.trycloudflare.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
