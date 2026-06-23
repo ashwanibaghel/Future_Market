@@ -52,8 +52,8 @@ def replay_historical_snapshots(
         # 1. Compute PCR
         pcr = calculate_pcr(strikes)
 
-        # 2. Compute Support/Resistance (and secondary levels)
-        s1, s2, r1, r2 = find_support_resistance(strikes)
+        # 2. Compute Support/Resistance (spot_price ensures supports <= spot, resistances > spot)
+        s1, s2, r1, r2 = find_support_resistance(strikes, spot_price=snap.spot_price)
         s1_strength, r1_strength = calculate_strengths(strikes, s1, r1)
 
         # 3. Compute Spot distances

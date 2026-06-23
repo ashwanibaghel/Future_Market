@@ -16,12 +16,17 @@ def calculate_pcr(strikes: List[OptionChainStrike]) -> float:
         return 0.0
     return float(total_put_oi / total_call_oi)
 
-def find_support_resistance(strikes: List[Any]) -> Tuple[float, float, float, float]:
+def find_support_resistance(strikes: List[Any], spot_price: float = 0.0) -> Tuple[float, float, float, float]:
     """
     Returns (Primary Support, Secondary Support, Primary Resistance, Secondary Resistance)
-    Levels are selected using a weighted combination of total Open Interest (OI) 
+
+    CRITICAL RULE:
+    - Support levels MUST be at or BELOW the current spot price (put writers defend levels below spot)
+    - Resistance levels MUST be ABOVE the current spot price (call writers cap levels above spot)
+
+    Levels are selected using a weighted combination of total Open Interest (OI)
     and intraday Open Interest change (Change OI) based on config settings.
-    
+
     score = (OI * OI_WEIGHT) + (Change_OI * CHANGE_OI_WEIGHT)
     """
     if not strikes:
@@ -31,15 +36,34 @@ def find_support_resistance(strikes: List[Any]) -> Tuple[float, float, float, fl
     oi_w = settings.OI_WEIGHT
     coi_w = settings.CHANGE_OI_WEIGHT
 
-    # Sort strikes by Put weighted score descending
-    sorted_puts = sorted(strikes, key=lambda s: (s.put_oi * oi_w) + (s.put_change_oi * coi_w), reverse=True)
-    primary_support = sorted_puts[0].strike
-    secondary_support = sorted_puts[1].strike if len(sorted_puts) > 1 else primary_support
+    # Filter strikes: support candidates are AT or BELOW spot, resistance candidates are ABOVE spot
+    if spot_price > 0:
+        support_strikes = [s for s in strikes if s.strike <= spot_price]
+        resistance_strikes = [s for s in strikes if s.strike > spot_price]
+    else:
+        # Fallback: no spot price available, use all strikes (legacy behaviour)
+        support_strikes = strikes
+        resistance_strikes = strikes
 
-    # Sort strikes by Call weighted score descending
-    sorted_calls = sorted(strikes, key=lambda s: (s.call_oi * oi_w) + (s.call_change_oi * coi_w), reverse=True)
+    # If filtering yields no candidates, fall back to full chain to avoid empty results
+    if not support_strikes:
+        support_strikes = strikes
+    if not resistance_strikes:
+        resistance_strikes = strikes
+
+    # Support: highest Put weighted score among strikes AT/BELOW spot
+    sorted_puts = sorted(support_strikes, key=lambda s: (s.put_oi * oi_w) + (s.put_change_oi * coi_w), reverse=True)
+    primary_support = sorted_puts[0].strike
+    # S2 must be BELOW S1 (deeper support), pick the highest scoring put below primary_support
+    s2_candidates = [s for s in sorted_puts[1:] if s.strike < primary_support]
+    secondary_support = s2_candidates[0].strike if s2_candidates else primary_support
+
+    # Resistance: highest Call weighted score among strikes ABOVE spot
+    sorted_calls = sorted(resistance_strikes, key=lambda s: (s.call_oi * oi_w) + (s.call_change_oi * coi_w), reverse=True)
     primary_resistance = sorted_calls[0].strike
-    secondary_resistance = sorted_calls[1].strike if len(sorted_calls) > 1 else primary_resistance
+    # R2 must be ABOVE R1 (deeper resistance), pick the highest scoring call above primary_resistance
+    r2_candidates = [s for s in sorted_calls[1:] if s.strike > primary_resistance]
+    secondary_resistance = r2_candidates[0].strike if r2_candidates else primary_resistance
 
     return primary_support, secondary_support, primary_resistance, secondary_resistance
 
@@ -160,8 +184,8 @@ def generate_analytics_snapshot_generic(
     # Compute PCR
     pcr = calculate_pcr(strikes)
 
-    # Compute Support and Resistance
-    s1, s2, r1, r2 = find_support_resistance(strikes)
+    # Compute Support and Resistance (spot_price ensures supports < spot, resistances > spot)
+    s1, s2, r1, r2 = find_support_resistance(strikes, spot_price=snapshot.spot_price)
 
     # Compute S1 and R1 Strengths
     s1_strength, r1_strength = calculate_strengths(strikes, s1, r1)
