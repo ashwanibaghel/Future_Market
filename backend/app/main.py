@@ -3,15 +3,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import option_chain, health, insights, replay, quant, edge_lab, research
+from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log
 from app.db.session import engine, Base
 from app.db import models  # Import models to ensure they are registered
 from app.engine.crawler import start_crawler_loop
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure database tables are created
-    Base.metadata.create_all(bind=engine)
+    # Run database migrations
+    from app.db.migrate import run_migrations
+    run_migrations()
     
     # Start background options crawler loop
     crawler_task = asyncio.create_task(start_crawler_loop())
@@ -55,6 +56,9 @@ app.include_router(replay.router, prefix="/api", tags=["Quant Replay Engine"])
 app.include_router(quant.router, prefix="/api", tags=["Quant Validation Console"])
 app.include_router(edge_lab.router, prefix="/api", tags=["Edge Lab Analysis"])
 app.include_router(research.router, prefix="/api", tags=["ML Research Store"])
+app.include_router(signals.router, prefix="/api", tags=["Trading Signals Advisor"])
+app.include_router(manual_decisions.router, prefix="/api", tags=["Manual Trader Decisions"])
+app.include_router(observation_log.router, prefix="/api", tags=["Daily Observation Sheet"])
 
 @app.get("/")
 def read_root():

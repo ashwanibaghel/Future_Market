@@ -35,6 +35,10 @@ class OptionChainStrike(Base):
     call_ltp = Column(Float, default=0.0)
     call_bid = Column(Float, default=0.0)
     call_ask = Column(Float, default=0.0)
+    call_delta = Column(Float, default=0.0)
+    call_gamma = Column(Float, default=0.0)
+    call_theta = Column(Float, default=0.0)
+    call_vega = Column(Float, default=0.0)
     
     # Put options data
     put_oi = Column(Integer, default=0)
@@ -44,6 +48,10 @@ class OptionChainStrike(Base):
     put_ltp = Column(Float, default=0.0)
     put_bid = Column(Float, default=0.0)
     put_ask = Column(Float, default=0.0)
+    put_delta = Column(Float, default=0.0)
+    put_gamma = Column(Float, default=0.0)
+    put_theta = Column(Float, default=0.0)
+    put_vega = Column(Float, default=0.0)
 
     # Relationship
     snapshot = relationship("OptionChainSnapshot", back_populates="strikes")
@@ -128,6 +136,10 @@ class OptionChainStrike5m(Base):
     call_ltp = Column(Float, default=0.0)
     call_bid = Column(Float, default=0.0)
     call_ask = Column(Float, default=0.0)
+    call_delta = Column(Float, default=0.0)
+    call_gamma = Column(Float, default=0.0)
+    call_theta = Column(Float, default=0.0)
+    call_vega = Column(Float, default=0.0)
     
     # Put options data
     put_oi = Column(Integer, default=0)
@@ -137,6 +149,10 @@ class OptionChainStrike5m(Base):
     put_ltp = Column(Float, default=0.0)
     put_bid = Column(Float, default=0.0)
     put_ask = Column(Float, default=0.0)
+    put_delta = Column(Float, default=0.0)
+    put_gamma = Column(Float, default=0.0)
+    put_theta = Column(Float, default=0.0)
+    put_vega = Column(Float, default=0.0)
 
     # Relationship
     snapshot = relationship("OptionChainSnapshot5m", back_populates="strikes")
@@ -198,6 +214,10 @@ class OptionChainStrike15m(Base):
     call_ltp = Column(Float, default=0.0)
     call_bid = Column(Float, default=0.0)
     call_ask = Column(Float, default=0.0)
+    call_delta = Column(Float, default=0.0)
+    call_gamma = Column(Float, default=0.0)
+    call_theta = Column(Float, default=0.0)
+    call_vega = Column(Float, default=0.0)
     
     # Put options data
     put_oi = Column(Integer, default=0)
@@ -207,6 +227,10 @@ class OptionChainStrike15m(Base):
     put_ltp = Column(Float, default=0.0)
     put_bid = Column(Float, default=0.0)
     put_ask = Column(Float, default=0.0)
+    put_delta = Column(Float, default=0.0)
+    put_gamma = Column(Float, default=0.0)
+    put_theta = Column(Float, default=0.0)
+    put_vega = Column(Float, default=0.0)
 
     # Relationship
     snapshot = relationship("OptionChainSnapshot15m", back_populates="strikes")
@@ -352,4 +376,103 @@ class MLFeatureSnapshot(Base):
     # Leakage Protection Flag
     label_ready_at = Column(DateTime, index=True)
     status = Column(String(20), default="PENDING", index=True)
+
+
+class TradingSignal(Base):
+    __tablename__ = "trading_signals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_id = Column(Integer, ForeignKey("option_chain_snapshots.id", ondelete="CASCADE"), index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    expiry_date = Column(String(20), index=True)
+    spot_price = Column(Float)
+    signal_type = Column(String(20))          # BUY_CALL, BUY_PUT, NO_TRADE
+    suggested_strike = Column(String(20), nullable=True) # e.g. "24100 CE"
+    strike_selection_reason = Column(String(30), nullable=True) # e.g. "ATM", "ATM+1", "Highest OI"
+    
+    # Confidence raw parameters (allows comparing across versions with different count of rules)
+    matched_conditions = Column(Integer, default=0)
+    total_conditions = Column(Integer, default=0)
+    
+    reasons = Column(Text)                    # JSON serialized boolean rule state dictionary: e.g. {"price_up": true, "pcr_up": false, ...}
+    signal_inputs = Column(Text, nullable=True) # JSON serialized inputs snapshot: e.g. {"spot": 25230, "pcr": 1.12, ...}
+    market_state = Column(String(30))         # Buildup state at signal generation
+    signal_version = Column(String(10), default="v1", index=True) # Version tracking for signal engines (v1, v2, etc.)
+    was_executed = Column(Boolean, default=False) # User executed this signal manually or not
+    
+    # Excursion & evaluation parameters
+    spot_after_15m = Column(Float, nullable=True)
+    spot_after_30m = Column(Float, nullable=True)
+    spot_after_60m = Column(Float, nullable=True)
+    
+    move_15m_points = Column(Float, nullable=True)
+    move_30m_points = Column(Float, nullable=True)
+    move_60m_points = Column(Float, nullable=True)
+    
+    move_15m_pct = Column(Float, nullable=True)
+    move_30m_pct = Column(Float, nullable=True)
+    move_60m_pct = Column(Float, nullable=True)
+    
+    outcome_15m = Column(String(20), default="PENDING") # WIN, LOSS, FLAT, PENDING
+    outcome_30m = Column(String(20), default="PENDING")
+    outcome_60m = Column(String(20), default="PENDING")
+    
+    status = Column(String(20), default="PENDING", index=True) # PENDING, COMPLETED
+
+
+class ManualTraderDecision(Base):
+    __tablename__ = "manual_trader_decisions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    expiry_date = Column(String(20), index=True)
+    spot_price = Column(Float)
+    decision_type = Column(String(20)) # BUY_CALL, BUY_PUT, STAY_OUT
+    suggested_strike = Column(String(20), nullable=True) # e.g. "80500 CE"
+    confidence_level = Column(String(10)) # LOW, MEDIUM, HIGH
+    notes = Column(Text, nullable=True) # JSON structured notes: e.g. {"price_above_vwap": true, ...}
+    matched_system_signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True)
+    was_executed = Column(Boolean, default=True)
+    
+    # Excursion & evaluation parameters
+    spot_after_15m = Column(Float, nullable=True)
+    spot_after_30m = Column(Float, nullable=True)
+    spot_after_60m = Column(Float, nullable=True)
+    
+    move_15m_points = Column(Float, nullable=True)
+    move_30m_points = Column(Float, nullable=True)
+    move_60m_points = Column(Float, nullable=True)
+    
+    move_15m_pct = Column(Float, nullable=True)
+    move_30m_pct = Column(Float, nullable=True)
+    move_60m_pct = Column(Float, nullable=True)
+    
+    outcome_15m = Column(String(20), default="PENDING") # WIN, LOSS, FLAT, PENDING
+    outcome_30m = Column(String(20), default="PENDING")
+    outcome_60m = Column(String(20), default="PENDING")
+    
+    status = Column(String(20), default="PENDING", index=True) # PENDING, COMPLETED
+
+
+class ObservationLog(Base):
+    __tablename__ = "observation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    spot_price = Column(Float)
+    market_state = Column(String(30))
+    system_signal = Column(String(20)) # BUY_CALL, BUY_PUT, NO_TRADE
+    manual_signal = Column(String(20)) # BUY_CALL, BUY_PUT, STAY_OUT, NO_RECORD
+    suggested_strike = Column(String(20), nullable=True)
+    result_15m = Column(String(20), default="PENDING")
+    result_30m = Column(String(20), default="PENDING")
+    result_60m = Column(String(20), default="PENDING")
+    notes = Column(Text, nullable=True) # JSON details
+    manual_decision_id = Column(Integer, ForeignKey("manual_trader_decisions.id", ondelete="SET NULL"), nullable=True)
+    system_signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(20), default="PENDING", index=True)
+
 

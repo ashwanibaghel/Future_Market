@@ -134,6 +134,14 @@ def aggregate_snapshots(db: Session, interval_minutes: int):
                 last_rec = strike_records[-1]
                 avg_call_iv = sum(r.call_iv for r in strike_records) / len(strike_records)
                 avg_put_iv = sum(r.put_iv for r in strike_records) / len(strike_records)
+                avg_call_delta = sum(r.call_delta for r in strike_records) / len(strike_records)
+                avg_call_gamma = sum(r.call_gamma for r in strike_records) / len(strike_records)
+                avg_call_theta = sum(r.call_theta for r in strike_records) / len(strike_records)
+                avg_call_vega = sum(r.call_vega for r in strike_records) / len(strike_records)
+                avg_put_delta = sum(r.put_delta for r in strike_records) / len(strike_records)
+                avg_put_gamma = sum(r.put_gamma for r in strike_records) / len(strike_records)
+                avg_put_theta = sum(r.put_theta for r in strike_records) / len(strike_records)
+                avg_put_vega = sum(r.put_vega for r in strike_records) / len(strike_records)
 
                 agg_strike = strike_cls(
                     snapshot_id=agg_snapshot.id,
@@ -145,13 +153,21 @@ def aggregate_snapshots(db: Session, interval_minutes: int):
                     call_ltp=last_rec.call_ltp,
                     call_bid=last_rec.call_bid,
                     call_ask=last_rec.call_ask,
+                    call_delta=avg_call_delta,
+                    call_gamma=avg_call_gamma,
+                    call_theta=avg_call_theta,
+                    call_vega=avg_call_vega,
                     put_oi=last_rec.put_oi,
                     put_change_oi=last_rec.put_change_oi,
                     put_volume=last_rec.put_volume,
                     put_iv=avg_put_iv,
                     put_ltp=last_rec.put_ltp,
                     put_bid=last_rec.put_bid,
-                    put_ask=last_rec.put_ask
+                    put_ask=last_rec.put_ask,
+                    put_delta=avg_put_delta,
+                    put_gamma=avg_put_gamma,
+                    put_theta=avg_put_theta,
+                    put_vega=avg_put_vega
                 )
                 agg_strikes.append(agg_strike)
 

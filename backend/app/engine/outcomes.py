@@ -2,7 +2,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from app.db.models import OptionChainSnapshot, AnalyticsSnapshot, InsightOutcome, SystemMetadata
+from app.db.models import OptionChainSnapshot, AnalyticsSnapshot, InsightOutcome, SystemMetadata, ManualTraderDecision, ObservationLog, TradingSignal
 
 logger = logging.getLogger(__name__)
 
@@ -278,3 +278,378 @@ def backfill_insight_outcomes(db: Session):
     set_metadata(db, "last_backfill_duration_ms", str(duration_ms))
 
     logger.info(f"Retrospective backfill complete. Created {created_count} outcomes. Duration: {duration_ms} ms. Watermark is now {last_id}.")
+
+
+def get_success_threshold_points(symbol: str, spot_price: float) -> float:
+    """
+    Returns point-based movement success threshold dynamically tailored by symbol.
+    """
+    if symbol == "NIFTY":
+        return 15.0
+    elif symbol == "BANKNIFTY":
+        return 30.0
+    elif symbol == "SENSEX":
+        return 45.0
+    else:
+        # For stocks: 0.05% of the spot price as proxy, min 0.1 points
+        return max(0.1, round(spot_price * 0.0005, 2))
+
+
+def evaluate_trading_signals(db: Session):
+    """
+    Scans pending trading signals and updates their outcomes (15m, 30m, 60m)
+    using future snapshots.
+    """
+    logger.info("Evaluating pending trading signals...")
+    from app.db.models import TradingSignal, OptionChainSnapshot
+    
+    pending_signals = db.query(TradingSignal).filter(TradingSignal.status != "COMPLETED").all()
+    if not pending_signals:
+        logger.info("No pending trading signals to evaluate.")
+        return
+
+    now = datetime.utcnow()
+    updated_count = 0
+
+    for signal in pending_signals:
+        age_seconds = (now - signal.timestamp).total_seconds()
+        threshold = get_success_threshold_points(signal.symbol, signal.spot_price)
+        
+        # Check 15m outcome
+        if signal.spot_after_15m is None:
+            t_min = signal.timestamp + timedelta(minutes=13)
+            t_max = signal.timestamp + timedelta(minutes=17)
+            snap = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.symbol == signal.symbol,
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.timestamp >= t_min,
+                OptionChainSnapshot.timestamp <= t_max
+            ).order_by(OptionChainSnapshot.timestamp.asc()).first()
+            if snap:
+                signal.spot_after_15m = snap.spot_price
+                signal.move_15m_points = snap.spot_price - signal.spot_price
+                signal.move_15m_pct = (signal.move_15m_points / signal.spot_price) * 100
+                
+                # Determine outcome_15m
+                if signal.signal_type == "BUY_CALL":
+                    if signal.move_15m_points >= threshold:
+                        signal.outcome_15m = "WIN"
+                    elif signal.move_15m_points <= -threshold:
+                        signal.outcome_15m = "LOSS"
+                    else:
+                        signal.outcome_15m = "FLAT"
+                elif signal.signal_type == "BUY_PUT":
+                    if signal.move_15m_points <= -threshold:
+                        signal.outcome_15m = "WIN"
+                    elif signal.move_15m_points >= threshold:
+                        signal.outcome_15m = "LOSS"
+                    else:
+                        signal.outcome_15m = "FLAT"
+                else: # NO_TRADE
+                    signal.outcome_15m = "FLAT"
+
+        # Check 30m outcome
+        if signal.spot_after_30m is None:
+            t_min = signal.timestamp + timedelta(minutes=28)
+            t_max = signal.timestamp + timedelta(minutes=32)
+            snap = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.symbol == signal.symbol,
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.timestamp >= t_min,
+                OptionChainSnapshot.timestamp <= t_max
+            ).order_by(OptionChainSnapshot.timestamp.asc()).first()
+            if snap:
+                signal.spot_after_30m = snap.spot_price
+                signal.move_30m_points = snap.spot_price - signal.spot_price
+                signal.move_30m_pct = (signal.move_30m_points / signal.spot_price) * 100
+                
+                # Determine outcome_30m
+                if signal.signal_type == "BUY_CALL":
+                    if signal.move_30m_points >= threshold:
+                        signal.outcome_30m = "WIN"
+                    elif signal.move_30m_points <= -threshold:
+                        signal.outcome_30m = "LOSS"
+                    else:
+                        signal.outcome_30m = "FLAT"
+                elif signal.signal_type == "BUY_PUT":
+                    if signal.move_30m_points <= -threshold:
+                        signal.outcome_30m = "WIN"
+                    elif signal.move_30m_points >= threshold:
+                        signal.outcome_30m = "LOSS"
+                    else:
+                        signal.outcome_30m = "FLAT"
+                else: # NO_TRADE
+                    signal.outcome_30m = "FLAT"
+
+        # Check 60m outcome
+        if signal.spot_after_60m is None:
+            t_min = signal.timestamp + timedelta(minutes=58)
+            t_max = signal.timestamp + timedelta(minutes=62)
+            snap = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.symbol == signal.symbol,
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.timestamp >= t_min,
+                OptionChainSnapshot.timestamp <= t_max
+            ).order_by(OptionChainSnapshot.timestamp.asc()).first()
+            if snap:
+                signal.spot_after_60m = snap.spot_price
+                signal.move_60m_points = snap.spot_price - signal.spot_price
+                signal.move_60m_pct = (signal.move_60m_points / signal.spot_price) * 100
+                
+                # Determine outcome_60m
+                if signal.signal_type == "BUY_CALL":
+                    if signal.move_60m_points >= threshold:
+                        signal.outcome_60m = "WIN"
+                    elif signal.move_60m_points <= -threshold:
+                        signal.outcome_60m = "LOSS"
+                    else:
+                        signal.outcome_60m = "FLAT"
+                elif signal.signal_type == "BUY_PUT":
+                    if signal.move_60m_points <= -threshold:
+                        signal.outcome_60m = "WIN"
+                    elif signal.move_60m_points >= threshold:
+                        signal.outcome_60m = "LOSS"
+                    else:
+                        signal.outcome_60m = "FLAT"
+                else: # NO_TRADE
+                    signal.outcome_60m = "FLAT"
+                
+                signal.status = "COMPLETED"
+
+        # Age out/Complete if older than 65 minutes
+        if age_seconds > 3900 and signal.status != "COMPLETED":
+            if signal.spot_after_15m is None:
+                signal.outcome_15m = "FLAT"
+            if signal.spot_after_30m is None:
+                signal.outcome_30m = "FLAT"
+            if signal.spot_after_60m is None:
+                signal.outcome_60m = "FLAT"
+            signal.status = "COMPLETED"
+
+        updated_count += 1
+
+    db.commit()
+    logger.info(f"Evaluated {updated_count} trading signals.")
+
+
+def backfill_trading_signals(db: Session):
+    """
+    Startup scan to create and evaluate TradingSignal records for all existing historical snapshots.
+    """
+    logger.info("Starting retrospective backfill of trading signals...")
+    from app.db.models import TradingSignal, OptionChainSnapshot
+    from app.engine.signals import generate_trading_signal
+    
+    # Retrieve last successful backfill snapshot ID watermark for signals
+    last_id_str = get_metadata(db, "last_backfilled_signal_snapshot_id", "0")
+    try:
+        last_id = int(last_id_str)
+    except ValueError:
+        last_id = 0
+
+    batch_size = 500
+    created_count = 0
+    
+    while True:
+        snapshots = db.query(OptionChainSnapshot).filter(
+            OptionChainSnapshot.collection_status == "SUCCESS",
+            OptionChainSnapshot.id > last_id
+        ).order_by(OptionChainSnapshot.id.asc()).limit(batch_size).all()
+        
+        if not snapshots:
+            break
+            
+        for snap in snapshots:
+            sig = generate_trading_signal(db, snap.id)
+            if sig:
+                created_count += 1
+            last_id = snap.id
+            
+        db.commit()
+        set_metadata(db, "last_backfilled_signal_snapshot_id", str(last_id))
+        
+    logger.info(f"Trading signals backfill complete. Created {created_count} trading signals.")
+    
+    # Evaluate outcomes of all trading signals
+    evaluate_trading_signals(db)
+
+
+def evaluate_manual_decisions(db: Session):
+    """
+    Scans pending manual decisions and updates their outcomes (15m, 30m, 60m)
+    using future snapshots.
+    """
+    logger.info("Evaluating pending manual trader decisions...")
+    
+    pending = db.query(ManualTraderDecision).filter(ManualTraderDecision.status != "COMPLETED").all()
+    if not pending:
+        logger.info("No pending manual decisions to evaluate.")
+        return
+
+    now = datetime.utcnow()
+    updated_count = 0
+
+    for decision in pending:
+        age_seconds = (now - decision.timestamp).total_seconds()
+        threshold = get_success_threshold_points(decision.symbol, decision.spot_price)
+        
+        # Check 15m outcome
+        if decision.spot_after_15m is None:
+            t_min = decision.timestamp + timedelta(minutes=13)
+            t_max = decision.timestamp + timedelta(minutes=17)
+            snap = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.symbol == decision.symbol,
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.timestamp >= t_min,
+                OptionChainSnapshot.timestamp <= t_max
+            ).order_by(OptionChainSnapshot.timestamp.asc()).first()
+            if snap:
+                decision.spot_after_15m = snap.spot_price
+                decision.move_15m_points = snap.spot_price - decision.spot_price
+                decision.move_15m_pct = (decision.move_15m_points / decision.spot_price) * 100
+                decision.status = "PARTIAL"
+                
+                # Determine outcome_15m
+                if decision.decision_type == "BUY_CALL":
+                    if decision.move_15m_points >= threshold:
+                        decision.outcome_15m = "WIN"
+                    elif decision.move_15m_points <= -threshold:
+                        decision.outcome_15m = "LOSS"
+                    else:
+                        decision.outcome_15m = "FLAT"
+                elif decision.decision_type == "BUY_PUT":
+                    if decision.move_15m_points <= -threshold:
+                        decision.outcome_15m = "WIN"
+                    elif decision.move_15m_points >= threshold:
+                        decision.outcome_15m = "LOSS"
+                    else:
+                        decision.outcome_15m = "FLAT"
+                else: # STAY_OUT / NO_TRADE
+                    decision.outcome_15m = "FLAT"
+
+        # Check 30m outcome
+        if decision.spot_after_30m is None:
+            t_min = decision.timestamp + timedelta(minutes=28)
+            t_max = decision.timestamp + timedelta(minutes=32)
+            snap = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.symbol == decision.symbol,
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.timestamp >= t_min,
+                OptionChainSnapshot.timestamp <= t_max
+            ).order_by(OptionChainSnapshot.timestamp.asc()).first()
+            if snap:
+                decision.spot_after_30m = snap.spot_price
+                decision.move_30m_points = snap.spot_price - decision.spot_price
+                decision.move_30m_pct = (decision.move_30m_points / decision.spot_price) * 100
+                decision.status = "PARTIAL"
+                
+                # Determine outcome_30m
+                if decision.decision_type == "BUY_CALL":
+                    if decision.move_30m_points >= threshold:
+                        decision.outcome_30m = "WIN"
+                    elif decision.move_30m_points <= -threshold:
+                        decision.outcome_30m = "LOSS"
+                    else:
+                        decision.outcome_30m = "FLAT"
+                elif decision.decision_type == "BUY_PUT":
+                    if decision.move_30m_points <= -threshold:
+                        decision.outcome_30m = "WIN"
+                    elif decision.move_30m_points >= threshold:
+                        decision.outcome_30m = "LOSS"
+                    else:
+                        decision.outcome_30m = "FLAT"
+                else: # STAY_OUT / NO_TRADE
+                    decision.outcome_30m = "FLAT"
+
+        # Check 60m outcome
+        if decision.spot_after_60m is None:
+            t_min = decision.timestamp + timedelta(minutes=58)
+            t_max = decision.timestamp + timedelta(minutes=62)
+            snap = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.symbol == decision.symbol,
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.timestamp >= t_min,
+                OptionChainSnapshot.timestamp <= t_max
+            ).order_by(OptionChainSnapshot.timestamp.asc()).first()
+            if snap:
+                decision.spot_after_60m = snap.spot_price
+                decision.move_60m_points = snap.spot_price - decision.spot_price
+                decision.move_60m_pct = (decision.move_60m_points / decision.spot_price) * 100
+                
+                # Determine outcome_60m
+                if decision.decision_type == "BUY_CALL":
+                    if decision.move_60m_points >= threshold:
+                        decision.outcome_60m = "WIN"
+                    elif decision.move_60m_points <= -threshold:
+                        decision.outcome_60m = "LOSS"
+                    else:
+                        decision.outcome_60m = "FLAT"
+                elif decision.decision_type == "BUY_PUT":
+                    if decision.move_60m_points <= -threshold:
+                        decision.outcome_60m = "WIN"
+                    elif decision.move_60m_points >= threshold:
+                        decision.outcome_60m = "LOSS"
+                    else:
+                        decision.outcome_60m = "FLAT"
+                else: # STAY_OUT / NO_TRADE
+                    decision.outcome_60m = "FLAT"
+                
+                decision.status = "COMPLETED"
+
+        # Age out/Complete if older than 65 minutes
+        if age_seconds > 3900 and decision.status != "COMPLETED":
+            if decision.spot_after_15m is None:
+                decision.outcome_15m = "FLAT"
+            if decision.spot_after_30m is None:
+                decision.outcome_30m = "FLAT"
+            if decision.spot_after_60m is None:
+                decision.outcome_60m = "FLAT"
+            decision.status = "COMPLETED"
+
+        updated_count += 1
+
+    db.commit()
+    logger.info(f"Evaluated {updated_count} manual decisions.")
+
+
+def evaluate_observation_logs(db: Session):
+    """
+    Syncs and resolves outcome results in the ObservationLog table from their linked sources.
+    """
+    logger.info("Evaluating pending daily observation logs...")
+    
+    pending = db.query(ObservationLog).filter(ObservationLog.status != "COMPLETED").all()
+    if not pending:
+        logger.info("No pending observation logs to evaluate.")
+        return
+
+    updated_count = 0
+    
+    for log in pending:
+        # 1. If linked to manual decision
+        if log.manual_decision_id:
+            m_dec = db.query(ManualTraderDecision).filter(ManualTraderDecision.id == log.manual_decision_id).first()
+            if m_dec:
+                log.result_15m = m_dec.outcome_15m
+                log.result_30m = m_dec.outcome_30m
+                log.result_60m = m_dec.outcome_60m
+                log.status = m_dec.status
+                updated_count += 1
+                
+        # 2. Else if linked to system signal
+        elif log.system_signal_id:
+            sys_sig = db.query(TradingSignal).filter(TradingSignal.id == log.system_signal_id).first()
+            if sys_sig:
+                log.result_15m = sys_sig.outcome_15m
+                log.result_30m = sys_sig.outcome_30m
+                log.result_60m = sys_sig.outcome_60m
+                log.status = sys_sig.status
+                updated_count += 1
+        else:
+            # Unlinked log, mark completed
+            log.status = "COMPLETED"
+            updated_count += 1
+            
+    db.commit()
+    logger.info(f"Synchronized/Evaluated {updated_count} observation logs.")
+

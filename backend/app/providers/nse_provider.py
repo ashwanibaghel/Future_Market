@@ -43,10 +43,55 @@ class NSEProvider(BaseProvider):
             logger.error(f"Failed to initialize NSE session: {str(e)}")
             raise e
 
-    async def fetch_option_chain(self, symbol: str) -> Dict[str, Any]:
+    async def fetch_option_chain(self, symbol: str) -> List[Dict[str, Any]]:
         """
         Fetches option chain derivatives data from the working NextApi endpoint.
+        For SENSEX, fetches real spot from Yahoo Finance and returns a zero strikes list.
         """
+        if symbol == "SENSEX":
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                async with httpx.AsyncClient(follow_redirects=True) as client:
+                    logger.info("Fetching SENSEX spot price from Yahoo Finance...")
+                    response = await client.get(
+                        "https://query1.finance.yahoo.com/v8/finance/chart/%5EBSESN",
+                        headers=headers,
+                        timeout=10.0
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    chart = data.get("chart", {})
+                    result = chart.get("result", [])
+                    if not result:
+                        raise ValueError("No result in Yahoo Finance response for ^BSESN")
+                    meta = result[0].get("meta", {})
+                    spot_price = meta.get("regularMarketPrice")
+                    if spot_price is None:
+                        indicators = result[0].get("indicators", {})
+                        quote = indicators.get("quote", [{}])[0]
+                        close = quote.get("close", [])
+                        if close:
+                            spot_price = close[-1]
+                    if spot_price is None:
+                        raise ValueError("Could not extract spot price for SENSEX")
+                    
+                    spot_price = float(spot_price)
+                    
+                    # Standardized date representation for Sensex: N/A since it has no options/expiry
+                    return [{
+                        "symbol": "SENSEX",
+                        "spot_price": spot_price,
+                        "expiry_date": "N/A",
+                        "expiry_dates": ["N/A"],
+                        "strikes": [],
+                        "raw_payload": json.dumps(data)
+                    }]
+            except Exception as e:
+                logger.error(f"Failed to fetch SENSEX spot from Yahoo Finance: {str(e)}")
+                raise e
+
         api_url = f"{self.base_url}/api/NextApi/apiClient/GetQuoteApi?functionName=getSymbolDerivativesData&symbol={symbol}"
         
         async with httpx.AsyncClient(follow_redirects=True) as client:
@@ -66,14 +111,14 @@ class NSEProvider(BaseProvider):
                 
                 # If unauthorized, try re-initializing session cookies once
                 if response.status_code in [401, 403]:
-                    logger.warning("Session expired or unauthorized. Re-initializing session...")
-                    await self._init_session(client)
-                    response = await client.get(
-                        api_url,
-                        headers=self.headers,
-                        cookies=self.cookies,
-                        timeout=10.0
-                    )
+                     logger.warning("Session expired or unauthorized. Re-initializing session...")
+                     await self._init_session(client)
+                     response = await client.get(
+                         api_url,
+                         headers=self.headers,
+                         cookies=self.cookies,
+                         timeout=10.0
+                     )
                 
                 response.raise_for_status()
                 data = response.json()
@@ -92,10 +137,10 @@ class NSEProvider(BaseProvider):
         if not records:
             raise ValueError(f"No records found in NextApi response for {symbol}")
             
-        # Filter for Options (OPTIDX) only
-        options = [r for r in records if r.get("instrumentType") == "OPTIDX"]
+        # Filter for Options (OPTIDX or OPTSTK)
+        options = [r for r in records if r.get("instrumentType") in ["OPTIDX", "OPTSTK"]]
         if not options:
-            raise ValueError(f"No option contracts (OPTIDX) found in derivatives data for {symbol}")
+            raise ValueError(f"No option contracts (OPTIDX or OPTSTK) found in derivatives data for {symbol}")
             
         # Extract spot price (underlyingValue is present in each record)
         spot_price = 0.0

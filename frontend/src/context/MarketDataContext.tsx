@@ -39,6 +39,14 @@ interface MarketDataContextType {
   trendsData: any[] | null;
   trendsLoading: boolean;
   trendsError: string | null;
+
+  // Trading Signals Advisor
+  latestSignal: any | null;
+  signalsStats: any | null;
+  signalsHistory: any[];
+  signalsLoading: boolean;
+  signalsError: string | null;
+  executeSignal: (signalId: number) => Promise<boolean>;
   
   // General status
   isRefreshing: boolean;
@@ -92,6 +100,13 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
   const [trendsData, setTrendsData] = useState<any[] | null>(null);
   const [trendsLoading, setTrendsLoading] = useState(true);
   const [trendsError, setTrendsError] = useState<string | null>(null);
+
+  // Trading Signals Advisor state
+  const [latestSignal, setLatestSignal] = useState<any | null>(null);
+  const [signalsStats, setSignalsStats] = useState<any | null>(null);
+  const [signalsHistory, setSignalsHistory] = useState<any[]>([]);
+  const [signalsLoading, setSignalsLoading] = useState(true);
+  const [signalsError, setSignalsError] = useState<string | null>(null);
   
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -213,6 +228,65 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
+  const fetchLatestSignal = useCallback(async (sym: string, date: string | null, isSilent = false) => {
+    if (!isSilent) setSignalsLoading(true);
+    try {
+      let url = `${BACKEND_URL}/api/signals/latest?symbol=${sym}`;
+      if (date) url += `&date=${date}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch latest signal");
+      const d = await res.json();
+      setLatestSignal(d);
+      setSignalsError(null);
+    } catch (err: any) {
+      setSignalsError(err.message || "Failed to fetch latest signal");
+    } finally {
+      setSignalsLoading(false);
+    }
+  }, []);
+
+  const fetchSignalsStats = useCallback(async (sym: string, isSilent = false) => {
+    try {
+      const url = `${BACKEND_URL}/api/signals/stats?symbol=${sym}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch signals stats");
+      const d = await res.json();
+      setSignalsStats(d);
+    } catch (err: any) {
+      console.error(err);
+    }
+  }, []);
+
+  const fetchSignalsHistory = useCallback(async (sym: string, isSilent = false) => {
+    try {
+      const url = `${BACKEND_URL}/api/signals/history?symbol=${sym}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch signals history");
+      const d = await res.json();
+      setSignalsHistory(d);
+    } catch (err: any) {
+      console.error(err);
+    }
+  }, []);
+
+  const executeSignal = useCallback(async (signalId: number) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/signals/${signalId}/execute`, {
+        method: "POST"
+      });
+      if (!res.ok) throw new Error("Failed to execute signal");
+      
+      // Update local state to reflect change immediately
+      setLatestSignal((prev: any) => prev && prev.id === signalId ? { ...prev, was_executed: true } : prev);
+      setSignalsHistory((prev) => prev.map((s) => s.id === signalId ? { ...s, was_executed: true } : s));
+      
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
+    }
+  }, []);
+
   const fetchAll = useCallback(async (sym: string, expiry: string | null, date: string | null, isSilent = false) => {
     if (isSilent) {
       setIsRefreshing(true);
@@ -222,7 +296,10 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
       fetchChain(sym, expiry, date, isSilent),
       fetchInsights(sym, expiry, date, isSilent),
       fetchQuant(sym, expiry, date, isSilent),
-      fetchTrends(sym, expiry, date, isSilent)
+      fetchTrends(sym, expiry, date, isSilent),
+      fetchLatestSignal(sym, date, isSilent),
+      fetchSignalsStats(sym, isSilent),
+      fetchSignalsHistory(sym, isSilent)
     ]);
     
     const chainSuccess = results[0];
@@ -231,7 +308,7 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
       setLastSync(new Date());
     }
     setIsRefreshing(false);
-  }, [fetchChain, fetchInsights, fetchQuant, fetchTrends]);
+  }, [fetchChain, fetchInsights, fetchQuant, fetchTrends, fetchLatestSignal, fetchSignalsStats, fetchSignalsHistory]);
 
   const refreshAll = useCallback(async () => {
     setIsRefreshing(true);
@@ -336,6 +413,12 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
         trendsData,
         trendsLoading,
         trendsError,
+        latestSignal,
+        signalsStats,
+        signalsHistory,
+        signalsLoading,
+        signalsError,
+        executeSignal,
         isRefreshing,
         lastSync,
         connected,

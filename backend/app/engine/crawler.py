@@ -89,13 +89,21 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
                     call_ltp=item['call_ltp'],
                     call_bid=item['call_bid'],
                     call_ask=item['call_ask'],
+                    call_delta=item.get('call_delta', 0.0),
+                    call_gamma=item.get('call_gamma', 0.0),
+                    call_theta=item.get('call_theta', 0.0),
+                    call_vega=item.get('call_vega', 0.0),
                     put_oi=item['put_oi'],
                     put_change_oi=item['put_change_oi'],
                     put_volume=item['put_volume'],
                     put_iv=item['put_iv'],
                     put_ltp=item['put_ltp'],
                     put_bid=item['put_bid'],
-                    put_ask=item['put_ask']
+                    put_ask=item['put_ask'],
+                    put_delta=item.get('put_delta', 0.0),
+                    put_gamma=item.get('put_gamma', 0.0),
+                    put_theta=item.get('put_theta', 0.0),
+                    put_vega=item.get('put_vega', 0.0)
                 )
                 strikes_to_save.append(strike_record)
             
@@ -109,8 +117,12 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
                 logger.info(f"Successfully generated analytics snapshot for {symbol} expiry {result['expiry_date']} (Snapshot ID: {snapshot.id}).")
                 # Capture ML features for timeframe 1m
                 capture_ml_features(db, snapshot.id, timeframe="1m")
+                
+                # Generate Trading Signal
+                from app.engine.signals import generate_trading_signal
+                generate_trading_signal(db, snapshot.id)
             except Exception as ae:
-                logger.exception(f"Failed to generate analytics snapshot for {symbol} expiry {result['expiry_date']}: {str(ae)}")
+                logger.exception(f"Failed to generate analytics snapshot/signals for {symbol} expiry {result['expiry_date']}: {str(ae)}")
                 
         return True
     except Exception as e:
@@ -180,19 +192,54 @@ def run_sync_ml_label_update():
     finally:
         db.close()
 
-def run_startup_backfill():
+def run_sync_signals_evaluation():
     """
-    On startup, creates InsightOutcome records for all historical snapshots and evaluates them.
-    Runs once in a background thread.
-    # ROADMAP (Sprint 8): Store last_backfill_timestamp in a metadata/config table so that
-    # on re-starts with 50,000+ snapshots, only un-processed snapshots need backfilling
-    # (instead of scanning all rows). This will keep startup fast at scale.
+    Evaluates pending TradingSignal records using available snapshots.
+    Runs in a separate thread to avoid blocking the async event loop.
     """
     from app.db.session import SessionLocal
-    from app.engine.outcomes import backfill_insight_outcomes
+    from app.engine.outcomes import evaluate_trading_signals
+    db = SessionLocal()
+    try:
+        evaluate_trading_signals(db)
+    finally:
+        db.close()
+
+def run_sync_manual_decisions_evaluation():
+    """
+    Evaluates pending ManualTraderDecision records using available snapshots.
+    """
+    from app.db.session import SessionLocal
+    from app.engine.outcomes import evaluate_manual_decisions
+    db = SessionLocal()
+    try:
+        evaluate_manual_decisions(db)
+    finally:
+        db.close()
+
+def run_sync_observation_logs_evaluation():
+    """
+    Evaluates pending ObservationLog records using available snapshots.
+    """
+    from app.db.session import SessionLocal
+    from app.engine.outcomes import evaluate_observation_logs
+    db = SessionLocal()
+    try:
+        evaluate_observation_logs(db)
+    finally:
+        db.close()
+
+def run_startup_backfill():
+    """
+    On startup, creates InsightOutcome and TradingSignal records for all historical snapshots and evaluates them.
+    Runs once in a background thread.
+    """
+    from app.db.session import SessionLocal
+    from app.engine.outcomes import backfill_insight_outcomes, backfill_trading_signals
     db = SessionLocal()
     try:
         backfill_insight_outcomes(db)
+        backfill_trading_signals(db)
     except Exception as e:
         logger.exception(f"Startup backfill failed: {str(e)}")
     finally:
@@ -252,6 +299,27 @@ async def start_crawler_loop():
                     await asyncio.to_thread(run_sync_ml_label_update)
                 except Exception as ml_err:
                     logger.exception(f"Unexpected error in ML labels evaluation cycle: {str(ml_err)}")
+                
+                # 3.7. Evaluate pending Trading Signals outcomes
+                try:
+                    logger.info("Evaluating pending Trading Signals...")
+                    await asyncio.to_thread(run_sync_signals_evaluation)
+                except Exception as sig_err:
+                    logger.exception(f"Unexpected error in trading signals evaluation cycle: {str(sig_err)}")
+                
+                # 3.8. Evaluate pending Manual Trader Decisions outcomes
+                try:
+                    logger.info("Evaluating pending Manual Trader Decisions...")
+                    await asyncio.to_thread(run_sync_manual_decisions_evaluation)
+                except Exception as md_err:
+                    logger.exception(f"Unexpected error in manual decisions evaluation cycle: {str(md_err)}")
+
+                # 3.9. Evaluate pending Observation Log outcomes
+                try:
+                    logger.info("Evaluating pending Observation Logs...")
+                    await asyncio.to_thread(run_sync_observation_logs_evaluation)
+                except Exception as ol_err:
+                    logger.exception(f"Unexpected error in observation logs evaluation cycle: {str(ol_err)}")
                 
                 # 4. Run database retention pruner hourly in a separate thread
                 now = datetime.utcnow()

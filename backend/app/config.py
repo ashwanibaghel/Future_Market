@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     
     # Provider Settings
     ACTIVE_PROVIDER: str = "NSE"
-    SYMBOLS: List[str] = ["NIFTY", "BANKNIFTY"]
+    SYMBOLS: List[str] = ["SENSEX", "NIFTY", "BANKNIFTY", "HDFCBANK", "ICICIBANK", "RELIANCE", "INFY", "TCS"]
     POLL_INTERVAL_SECONDS: int = 300
     
     # DB settings

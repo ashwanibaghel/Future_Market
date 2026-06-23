@@ -90,21 +90,20 @@ export default function TopBar({
         </div>
 
         {/* Symbol selector */}
-        <div className="flex bg-[#0d1117] border border-[#1e2433] rounded-xl p-1 gap-1">
-          {["NIFTY", "BANKNIFTY"].map((sym) => (
-            <button
-              key={sym}
-              id={`symbol-${sym.toLowerCase()}`}
-              onClick={() => onSymbolChange(sym)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide transition-all ${
-                symbol === sym
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/25"
-                  : "text-slate-500 hover:text-slate-200"
-              }`}
-            >
-              {sym}
-            </button>
-          ))}
+        <div className="flex items-center bg-[#0d1117] border border-[#1e2433] rounded-xl px-3 py-1.5">
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mr-2">Symbol:</span>
+          <select
+            id="symbol-select"
+            value={symbol}
+            onChange={(e) => onSymbolChange(e.target.value)}
+            className="bg-transparent text-xs font-bold text-slate-300 outline-none border-none cursor-pointer focus:ring-0"
+          >
+            {["NIFTY", "BANKNIFTY", "SENSEX", "RELIANCE", "HDFCBANK", "ICICIBANK", "INFY", "TCS"].map((sym) => (
+              <option key={sym} value={sym} className="bg-[#0d1117] text-slate-300">
+                {sym}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Date Selector */}

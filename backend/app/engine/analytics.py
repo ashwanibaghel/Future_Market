@@ -178,30 +178,31 @@ def generate_analytics_snapshot_generic(
         raise ValueError(f"Snapshot with ID {snapshot_id} not found in {snapshot_cls.__name__}")
 
     strikes = db.query(strike_cls).filter(strike_cls.snapshot_id == snapshot_id).all()
-    if not strikes:
+    # Raise error only if not SENSEX and strikes are missing
+    if not strikes and snapshot.symbol != "SENSEX":
         raise ValueError(f"No strikes found for snapshot ID {snapshot_id} in {strike_cls.__name__}")
 
     # Compute PCR
-    pcr = calculate_pcr(strikes)
+    pcr = calculate_pcr(strikes) if strikes else 0.0
 
     # Compute Support and Resistance (spot_price ensures supports < spot, resistances > spot)
-    s1, s2, r1, r2 = find_support_resistance(strikes, spot_price=snapshot.spot_price)
+    s1, s2, r1, r2 = find_support_resistance(strikes, spot_price=snapshot.spot_price) if strikes else (0.0, 0.0, 0.0, 0.0)
 
     # Compute S1 and R1 Strengths
-    s1_strength, r1_strength = calculate_strengths(strikes, s1, r1)
+    s1_strength, r1_strength = calculate_strengths(strikes, s1, r1) if strikes else ("LOW", "LOW")
 
     # Compute average IV of the current snapshot
-    current_total_iv = sum(s.call_iv + s.put_iv for s in strikes)
+    current_total_iv = sum(s.call_iv + s.put_iv for s in strikes) if strikes else 0.0
     current_avg_iv = current_total_iv / (len(strikes) * 2) if strikes else 0.0
 
     # Compute IV Change
     iv_change = calculate_iv_change_generic(
         db, snapshot.symbol, snapshot.expiry_date, current_avg_iv, snapshot_cls, strike_cls
-    )
+    ) if strikes else 0.0
 
     # Distances
-    distance_to_support = snapshot.spot_price - s1
-    distance_to_resistance = r1 - snapshot.spot_price
+    distance_to_support = (snapshot.spot_price - s1) if s1 > 0 else 0.0
+    distance_to_resistance = (r1 - snapshot.spot_price) if r1 > 0 else 0.0
 
     # Fetch previous snapshot for buildup calculations
     prev_snapshot = db.query(snapshot_cls).filter(

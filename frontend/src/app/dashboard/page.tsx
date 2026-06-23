@@ -58,9 +58,15 @@ export default function DashboardPage() {
     connected,
     refreshAll,
     quantData,
+    latestSignal,
+    signalsStats,
+    signalsHistory,
+    signalsLoading,
+    signalsError,
+    executeSignal,
   } = useMarketData();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "trends">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "trends" | "signals">("overview");
 
   const insights = insightsData.slice(0, 5);
 
@@ -207,9 +213,19 @@ export default function DashboardPage() {
                 >
                   Historical Trends
                 </button>
+                <button
+                  onClick={() => setActiveTab("signals")}
+                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                    activeTab === "signals"
+                      ? "border-indigo-500 text-indigo-400"
+                      : "border-transparent text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  Signal Advisor
+                </button>
               </div>
 
-              {activeTab === "overview" ? (
+              {activeTab === "overview" && (
                 <>
                   {/* ─── Stat Cards Row ─── */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -327,12 +343,378 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </>
-              ) : (
+              )}
+
+              {activeTab === "trends" && (
                 <HistoricalCharts
                   trends={trendsData || []}
                   loading={trendsLoading}
                   error={trendsError}
                 />
+              )}
+
+              {activeTab === "signals" && (
+                <div className="flex flex-col gap-6">
+                  {symbol === "SENSEX" ? (
+                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-8 text-center max-w-xl mx-auto my-8">
+                      <Lightbulb className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-slate-200 mb-1.5 uppercase tracking-wide">
+                        Sensex Option Chain & Signals Disabled
+                      </h3>
+                      <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                        SENSEX operates on the BSE exchange and lacks direct options data, PCR, open interest, and market state metrics on this platform.
+                        To avoid dataset pollution and fake predictions, active buy/sell signals are disabled. We only track its live spot price.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Decision + Performance Grid */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Decision Panel Card (2/3 columns) */}
+                        <div className="lg:col-span-2 flex flex-col gap-6">
+                          {(() => {
+                            if (!latestSignal) {
+                              return (
+                                <div className="bg-[#0d1117] border border-[#1e2433] rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[250px]">
+                                  <p className="text-slate-500 text-xs font-semibold">No signals generated yet for {symbol}.</p>
+                                </div>
+                              );
+                            }
+
+                            const sigType = latestSignal.signal_type || "NO_TRADE";
+                            const isBuyCall = sigType === "BUY_CALL";
+                            const isBuyPut = sigType === "BUY_PUT";
+                            const isNoTrade = sigType === "NO_TRADE";
+
+                            // Styling configurations
+                            const cardStyles = isBuyCall
+                              ? "from-emerald-950/20 to-emerald-900/5 border-emerald-500/30"
+                              : isBuyPut
+                              ? "from-rose-950/20 to-rose-900/5 border-rose-500/30"
+                              : "from-slate-800/40 to-slate-900/10 border-[#1e2433]";
+
+                            const badgeStyles = isBuyCall
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              : isBuyPut
+                              ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                              : "bg-slate-800/60 text-slate-400 border-[#1e2433]";
+
+                            const confidencePct = latestSignal.total_conditions > 0
+                              ? Math.round((latestSignal.matched_conditions / latestSignal.total_conditions) * 100)
+                              : 0;
+
+                            // Parse reasons object
+                            let reasonsObj: Record<string, boolean> = {};
+                            try {
+                              reasonsObj = typeof latestSignal.reasons === "string"
+                                ? JSON.parse(latestSignal.reasons)
+                                : latestSignal.reasons || {};
+                            } catch (e) {}
+
+                            // Parse inputs object
+                            let inputsObj: Record<string, any> = {};
+                            try {
+                              inputsObj = typeof latestSignal.signal_inputs === "string"
+                                ? JSON.parse(latestSignal.signal_inputs)
+                                : latestSignal.signal_inputs || {};
+                            } catch (e) {}
+
+                            return (
+                              <div className={`relative bg-gradient-to-br ${cardStyles} border rounded-2xl p-6 overflow-hidden`}>
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                                  {/* Left: Recommended Trade Type */}
+                                  <div>
+                                    <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                      Decision Output
+                                    </span>
+                                    <div className="flex items-center gap-3 mt-1.5">
+                                      <div className={`px-3 py-1 rounded-xl text-lg font-black border tracking-wider ${badgeStyles}`}>
+                                        {sigType.replace("_", " ")}
+                                      </div>
+                                      {latestSignal.suggested_strike && (
+                                        <div className="text-xl font-mono font-black text-slate-200">
+                                          {latestSignal.suggested_strike}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-3">
+                                      Generated At: {new Date(latestSignal.timestamp).toLocaleTimeString()} ({symbol} Spot: ₹{latestSignal.spot_price})
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Confidence Gauge */}
+                                  <div className="flex items-center gap-4 bg-[#060810]/50 border border-white/5 rounded-2xl p-4">
+                                    <div className="relative w-16 h-16 flex items-center justify-center">
+                                      {/* Circle background */}
+                                      <svg className="w-16 h-16 -rotate-90">
+                                        <circle cx="32" cy="32" r="28" className="stroke-slate-800 fill-none" strokeWidth="6" />
+                                        <circle
+                                          cx="32"
+                                          cy="32"
+                                          r="28"
+                                          className={`fill-none ${isBuyCall ? "stroke-emerald-400" : isBuyPut ? "stroke-rose-400" : "stroke-indigo-400"}`}
+                                          strokeWidth="6"
+                                          strokeDasharray={`${2 * Math.PI * 28}`}
+                                          strokeDashoffset={`${2 * Math.PI * 28 * (1 - confidencePct / 100)}`}
+                                          strokeLinecap="round"
+                                        />
+                                      </svg>
+                                      <span className="absolute text-xs font-black font-mono text-slate-200">
+                                        {confidencePct}%
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Rule Match</span>
+                                      <span className="text-xs font-bold text-slate-300">
+                                        {latestSignal.matched_conditions} of {latestSignal.total_conditions} rules
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="w-full h-px bg-white/5 my-5" />
+
+                                {/* Reasons list */}
+                                <h4 className="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">Rule Checklist</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                  {[
+                                    { key: "market_state_bullish", label: "Market State is Bullish (Long Buildup/Short Covering)", active: isBuyCall },
+                                    { key: "market_state_bearish", label: "Market State is Bearish (Short Buildup/Long Unwinding)", active: isBuyPut },
+                                    { key: "above_vwap", label: "Spot Above Daily Options VWAP", active: isBuyCall },
+                                    { key: "below_vwap", label: "Spot Below Daily Options VWAP", active: isBuyPut },
+                                    { key: "above_ema20", label: "Spot Above EMA20", active: isBuyCall },
+                                    { key: "below_ema20", label: "Spot Below EMA20", active: isBuyPut },
+                                    { key: "price_up", label: "Price Increasing (Current vs Previous Spot)", active: isBuyCall },
+                                    { key: "price_down", label: "Price Decreasing (Current vs Previous Spot)", active: isBuyPut },
+                                    { key: "pcr_up", label: "PCR Improving (Increasing PCR)", active: isBuyCall },
+                                    { key: "pcr_down", label: "PCR Declining (Decreasing PCR)", active: isBuyPut },
+                                    { key: "strength_high_medium", label: "Buildup Strength is HIGH or MEDIUM", active: true }
+                                  ].filter((item) => item.active || isNoTrade).map((item) => {
+                                    const val = reasonsObj[item.key] ?? false;
+                                    return (
+                                      <div
+                                        key={item.key}
+                                        className="flex items-center gap-2.5 p-2 bg-[#060810]/40 border border-white/5 rounded-xl hover:border-[#1e2433] transition-colors"
+                                      >
+                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center border text-[9px] font-black ${
+                                          val
+                                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                            : "bg-[#0d1117] text-slate-600 border-[#1e2433]"
+                                        }`}>
+                                          {val ? "✓" : "✗"}
+                                        </div>
+                                        <span className={`text-[10px] font-bold ${val ? "text-slate-300" : "text-slate-500 font-medium"}`}>
+                                          {item.label}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Auditing Input Values */}
+                                {Object.keys(inputsObj).length > 0 && (
+                                  <>
+                                    <div className="w-full h-px bg-white/5 my-5" />
+                                    <h4 className="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">Rule Input Snapshots (Debugging/ML Audit)</h4>
+                                    <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                                      {Object.entries(inputsObj).map(([key, val]) => (
+                                        <div key={key} className="bg-[#060810]/50 border border-white/5 rounded-xl p-2.5 text-center">
+                                          <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">{key}</span>
+                                          <span className="text-[11px] font-mono font-bold text-slate-300 mt-1 block">
+                                            {typeof val === "number" ? val.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : String(val)}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
+
+                                {/* Execution Action */}
+                                {!isNoTrade && (
+                                  <>
+                                    <div className="w-full h-px bg-white/5 my-5" />
+                                    <div className="flex items-center justify-between gap-4">
+                                      <span className="text-[10px] text-slate-500 font-bold leading-relaxed max-w-sm">
+                                        Track whether you took this trade. Recording executions helps compare system accuracy vs actual user trading accuracy.
+                                      </span>
+                                      {latestSignal.was_executed ? (
+                                        <button
+                                          disabled
+                                          className="px-4 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold whitespace-nowrap"
+                                        >
+                                          Trade Executed ✓
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => executeSignal(latestSignal.id)}
+                                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold whitespace-nowrap shadow-lg shadow-indigo-600/25 transition-all"
+                                        >
+                                          Mark Executed
+                                        </button>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Performance Scorecard Grid (1/3 column) */}
+                        <div className="flex flex-col gap-6">
+                          <div className="bg-[#0d1117] border border-[#1e2433] rounded-2xl p-5 flex flex-col gap-4">
+                            <span className="text-xs font-black text-slate-300 uppercase tracking-wider block">Performance Scorecard</span>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-[#060810]/50 border border-white/5 rounded-xl p-3.5 text-center">
+                                <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">Win Rate</span>
+                                <span className="text-2xl font-black font-mono text-emerald-400 mt-1 block">
+                                  {signalsStats?.overall_accuracy_pct ?? "0.0"}%
+                                </span>
+                              </div>
+                              <div className="bg-[#060810]/50 border border-white/5 rounded-xl p-3.5 text-center">
+                                <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">Total Trades</span>
+                                <span className="text-2xl font-black font-mono text-slate-300 mt-1 block">
+                                  {signalsStats?.total_signals ?? "0"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* W/L/F breakdown */}
+                            <div className="flex items-center justify-between border-b border-[#1e2433] pb-3 text-xs">
+                              <span className="text-slate-500 font-semibold">Wins</span>
+                              <span className="font-bold text-emerald-400 font-mono">{signalsStats?.wins ?? 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between border-b border-[#1e2433] pb-3 text-xs">
+                              <span className="text-slate-500 font-semibold">Losses</span>
+                              <span className="font-bold text-rose-400 font-mono">{signalsStats?.losses ?? 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between pb-1 text-xs">
+                              <span className="text-slate-500 font-semibold">Flats</span>
+                              <span className="font-bold text-slate-400 font-mono">{signalsStats?.flats ?? 0}</span>
+                            </div>
+                            
+                            <div className="w-full h-px bg-white/5 my-2" />
+                            
+                            {/* Timeframe Accuracy Matrix */}
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mt-2">Accuracy Matrix (Timeframe)</span>
+                            <div className="flex flex-col gap-2.5 mt-2">
+                              {["15m", "30m", "60m"].map((tf) => {
+                                const tfData = signalsStats?.timeframe_accuracy?.[tf] || {};
+                                const pct = tfData.accuracy_pct ?? 0.0;
+                                return (
+                                  <div key={tf} className="flex items-center justify-between bg-[#060810]/50 border border-white/5 rounded-xl p-2.5 text-xs">
+                                    <span className="text-slate-400 font-black font-mono">{tf} horizon</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-slate-500 font-medium">({tfData.wins ?? 0}/{tfData.total ?? 0} W)</span>
+                                      <span className={`font-black font-mono ${pct >= 70 ? "text-emerald-400" : pct >= 50 ? "text-amber-400" : "text-slate-400"}`}>
+                                        {pct}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Active Signal History Table */}
+                      <div className="bg-[#0d1117] border border-[#1e2433] rounded-2xl p-5">
+                        <span className="text-xs font-black text-slate-300 uppercase tracking-wider block mb-4">Signal History Log</span>
+                        
+                        {signalsHistory.length === 0 ? (
+                          <div className="py-12 text-center text-slate-600 text-xs font-semibold">
+                            No active signal history found.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="border-b border-[#1e2433] text-[9px] font-black text-slate-500 uppercase tracking-wider">
+                                  <th className="pb-3 pl-2">Time</th>
+                                  <th className="pb-3">Action</th>
+                                  <th className="pb-3 font-mono">Strike</th>
+                                  <th className="pb-3">15m</th>
+                                  <th className="pb-3">30m</th>
+                                  <th className="pb-3">60m</th>
+                                  <th className="pb-3">Move (60m)</th>
+                                  <th className="pb-3">Executed?</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {signalsHistory.map((sig) => {
+                                  const isBuyCall = sig.signal_type === "BUY_CALL";
+                                  const isExecuted = sig.was_executed;
+                                  
+                                  const badgeColor = isBuyCall
+                                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                                    : "text-rose-400 bg-rose-500/10 border-rose-500/20";
+                                    
+                                  const outcomeBadge = (val: string) => {
+                                    if (val === "WIN") return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                                    if (val === "LOSS") return "text-rose-400 bg-rose-500/10 border-rose-500/20";
+                                    if (val === "FLAT") return "text-slate-400 bg-slate-800/40 border-slate-700/30";
+                                    return "text-indigo-400 bg-indigo-500/10 border-indigo-500/20 animate-pulse";
+                                  };
+
+                                  return (
+                                    <tr key={sig.id} className="border-b border-white/5 hover:bg-[#131920]/40 text-xs text-slate-300 transition-colors">
+                                      <td className="py-3 pl-2 text-slate-500 font-medium font-mono">
+                                        {new Date(sig.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </td>
+                                      <td className="py-3">
+                                        <span className={`px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${badgeColor}`}>
+                                          {sig.signal_type.replace("_", " ")}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 font-mono font-bold text-slate-200">
+                                        {sig.suggested_strike || "—"}
+                                      </td>
+                                      <td className="py-3">
+                                        <span className={`px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider ${outcomeBadge(sig.outcome_15m)}`}>
+                                          {sig.outcome_15m}
+                                        </span>
+                                      </td>
+                                      <td className="py-3">
+                                        <span className={`px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider ${outcomeBadge(sig.outcome_30m)}`}>
+                                          {sig.outcome_30m}
+                                        </span>
+                                      </td>
+                                      <td className="py-3">
+                                        <span className={`px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider ${outcomeBadge(sig.outcome_60m)}`}>
+                                          {sig.outcome_60m}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 font-mono font-medium">
+                                        <span className={sig.move_60m_points > 0 ? "text-emerald-400" : sig.move_60m_points < 0 ? "text-rose-400" : "text-slate-500"}>
+                                          {sig.move_60m_points > 0 ? "+" : ""}{sig.move_60m_points?.toFixed(1) ?? "—"} pts ({sig.move_60m_pct?.toFixed(2) ?? "—"}%)
+                                        </span>
+                                      </td>
+                                      <td className="py-3 pl-2">
+                                        {isExecuted ? (
+                                          <span className="text-emerald-400 font-bold">Yes ✓</span>
+                                        ) : (
+                                          <button
+                                            onClick={() => executeSignal(sig.id)}
+                                            className="px-2 py-0.5 rounded border border-[#1e2433] bg-[#0d1117] hover:bg-indigo-600 hover:text-white text-[10px] font-bold text-slate-400 transition-all"
+                                          >
+                                            Mark Execute
+                                          </button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
 
             </div>
