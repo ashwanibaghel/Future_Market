@@ -1,5 +1,6 @@
 from app.providers.base import BaseProvider
 from app.providers.nse_provider import NSEProvider
+from app.providers.upstox_provider import UpstoxProvider
 
 # Dynamic Provider Factory
 def get_provider(provider_name: str) -> BaseProvider:
@@ -7,8 +8,7 @@ def get_provider(provider_name: str) -> BaseProvider:
     if provider_name == "NSE":
         return NSEProvider()
     elif provider_name == "UPSTOX":
-        # Placeholder for Upstox integration
-        raise NotImplementedError("Upstox Provider is not implemented yet")
+        return UpstoxProvider()
     elif provider_name == "ANGEL":
         # Placeholder for Angel One integration
         raise NotImplementedError("Angel Provider is not implemented yet")

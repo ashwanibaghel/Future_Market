@@ -37,7 +37,11 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
     """
     logger.info(f"Running background fetch and save for {symbol}...")
     try:
-        provider = get_provider(settings.ACTIVE_PROVIDER)
+        provider_name = settings.ACTIVE_PROVIDER
+        if symbol == "SENSEX" and settings.UPSTOX_ACCESS_TOKEN and settings.UPSTOX_ACCESS_TOKEN != "YOUR_PASTED_ACCESS_TOKEN_HERE":
+            provider_name = "UPSTOX"
+            
+        provider = get_provider(provider_name)
         results = await provider.fetch_option_chain(symbol)
         
         if not results:
@@ -47,7 +51,7 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
         # 1. Save Raw Response exactly once
         raw_response = RawProviderResponse(
             timestamp=datetime.utcnow(),
-            provider=settings.ACTIVE_PROVIDER,
+            provider=provider_name,
             symbol=symbol,
             payload_json=results[0]['raw_payload']
         )
@@ -60,10 +64,10 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
             snapshot = OptionChainSnapshot(
                 timestamp=datetime.utcnow(),
                 symbol=result['symbol'],
-                instrument_type="INDEX",
+                instrument_type="INDEX" if symbol in ["NIFTY", "BANKNIFTY", "SENSEX"] else "STOCK",
                 expiry_date=result['expiry_date'],
                 spot_price=result['spot_price'],
-                provider=settings.ACTIVE_PROVIDER,
+                provider=provider_name,
                 collection_status="SUCCESS",
                 collection_duration_ms=0
             )

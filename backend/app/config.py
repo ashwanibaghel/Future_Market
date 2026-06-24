@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # Provider APIs Configuration (Future and Current stubs)
     UPSTOX_API_KEY: str = ""
     UPSTOX_API_SECRET: str = ""
+    UPSTOX_ACCESS_TOKEN: str = ""
     ANGEL_CLIENT_ID: str = ""
     ANGEL_PASSWORD: str = ""
     ANGEL_API_KEY: str = ""
