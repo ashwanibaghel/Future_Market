@@ -14,23 +14,57 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/observation-log")
-def get_observation_log(symbol: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def get_observation_log(
+    symbol: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
+):
     """
     Returns the daily observation logs.
     """
     query = db.query(ObservationLog)
     if symbol:
         query = query.filter(ObservationLog.symbol == symbol)
+    if start_date:
+        try:
+            start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d").date(), datetime.min.time())
+            query = query.filter(ObservationLog.timestamp >= start_dt)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d").date(), datetime.max.time())
+            query = query.filter(ObservationLog.timestamp <= end_dt)
+        except ValueError:
+            pass
     return query.order_by(ObservationLog.timestamp.desc()).all()
 
 @router.get("/observation-log/export-csv")
-def export_observation_log_csv(symbol: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def export_observation_log_csv(
+    symbol: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
+):
     """
     Exports the observation logs as a downloadable CSV spreadsheet.
     """
     query = db.query(ObservationLog)
     if symbol:
         query = query.filter(ObservationLog.symbol == symbol)
+    if start_date:
+        try:
+            start_dt = datetime.combine(datetime.strptime(start_date, "%Y-%m-%d").date(), datetime.min.time())
+            query = query.filter(ObservationLog.timestamp >= start_dt)
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            end_dt = datetime.combine(datetime.strptime(end_date, "%Y-%m-%d").date(), datetime.max.time())
+            query = query.filter(ObservationLog.timestamp <= end_dt)
+        except ValueError:
+            pass
     logs = query.order_by(ObservationLog.timestamp.desc()).all()
     
     # Create CSV in memory
@@ -64,14 +98,12 @@ def export_observation_log_csv(symbol: Optional[str] = Query(None), db: Session 
             log.result_60m,
             log.notes or ""
         ])
-        
+    
     f.seek(0)
     
     filename = f"observation_log_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
     
     # Create StreamingResponse from the string buffer
-    # Note: StringIO needs to be converted/read or we can just yield the rows
-    # A cleaner way in FastAPI is to return response with headers
     response_content = f.getvalue()
     
     # Let's import Response

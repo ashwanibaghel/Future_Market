@@ -55,6 +55,36 @@ export default function ResearchPage() {
   const [exportSymbol, setExportSymbol] = useState("");
   const [exporting, setExporting] = useState(false);
 
+  // Observation Log Export filters
+  const [obsStartDate, setObsStartDate] = useState("");
+  const [obsEndDate, setObsEndDate] = useState("");
+  const [obsSymbol, setObsSymbol] = useState("");
+  const [obsExporting, setObsExporting] = useState(false);
+
+  const handleObsExport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setObsExporting(true);
+    try {
+      let query = "";
+      if (obsStartDate) query += `&start_date=${obsStartDate}`;
+      if (obsEndDate) query += `&end_date=${obsEndDate}`;
+      if (obsSymbol) query += `&symbol=${obsSymbol}`;
+      
+      // Clean query string
+      if (query.startsWith("&")) {
+        query = "?" + query.substring(1);
+      } else if (query) {
+        query = "?" + query;
+      }
+
+      window.open(`${BACKEND_URL}/api/observation-log/export-csv${query}`);
+    } catch (err) {
+      console.error("Observation log export failed", err);
+    } finally {
+      setObsExporting(false);
+    }
+  };
+
   const fetchStatus = async () => {
     try {
       setError(null);
@@ -364,74 +394,138 @@ export default function ResearchPage() {
                 </div>
               </div>
 
-              {/* ─── Export Dataset Panel ─── */}
-              <div className="bg-[#0d1117] border border-[#1e2433] rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="w-4 h-4 text-indigo-400" />
-                  <span className="text-sm font-bold text-slate-300">Export Labeled Dataset</span>
+              {/* ─── Export Panels Grid ─── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Export Labeled Dataset */}
+                <div className="bg-[#0d1117] border border-[#1e2433] rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="w-4 h-4 text-indigo-400" />
+                    <span className="text-sm font-bold text-slate-300">Export Labeled ML Dataset</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-6">
+                    Filters options features and retrospective labels. Export format is CSV with complete feature store columns.
+                  </p>
+                  <form onSubmit={handleExport} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Start Date</label>
+                      <input 
+                        type="date" 
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">End Date</label>
+                      <input 
+                        type="date" 
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Timeframe</label>
+                      <select
+                        value={exportTimeframe}
+                        onChange={(e) => setExportTimeframe(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="">All Timeframes</option>
+                        <option value="1m">1-Minute (1m)</option>
+                        <option value="5m">5-Minute (5m)</option>
+                        <option value="15m">15-Minute (15m)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Symbol</label>
+                      <select
+                        value={exportSymbol}
+                        onChange={(e) => setExportSymbol(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="">All Symbols</option>
+                        <option value="NIFTY">NIFTY</option>
+                        <option value="BANKNIFTY">BANKNIFTY</option>
+                        <option value="SENSEX">SENSEX</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2 mt-2">
+                      <button 
+                        type="submit" 
+                        disabled={exporting}
+                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white rounded-xl py-2.5 px-4 text-xs font-bold hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                      >
+                        {exporting ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <FileDown className="w-3.5 h-3.5" />
+                        )}
+                        <span>{exporting ? "Preparing Dataset..." : "Download ML Labeled CSV"}</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                <p className="text-xs text-slate-500 mb-6">
-                  Filters options features and retrospective labels. Export format is CSV with complete columns.
-                </p>
-                <form onSubmit={handleExport} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Start Date</label>
-                    <input 
-                      type="date" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    />
+
+                {/* Export Daily Observation Log */}
+                <div className="bg-[#0d1117] border border-[#1e2433] rounded-2xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="w-4 h-4 text-indigo-400" />
+                    <span className="text-sm font-bold text-slate-300">Export Daily Observation Sheet</span>
                   </div>
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">End Date</label>
-                    <input 
-                      type="date" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Timeframe</label>
-                    <select
-                      value={exportTimeframe}
-                      onChange={(e) => setExportTimeframe(e.target.value)}
-                      className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="">All Timeframes</option>
-                      <option value="1m">1-Minute (1m)</option>
-                      <option value="5m">5-Minute (5m)</option>
-                      <option value="15m">15-Minute (15m)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Symbol</label>
-                    <select
-                      value={exportSymbol}
-                      onChange={(e) => setExportSymbol(e.target.value)}
-                      className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="">All Symbols</option>
-                      <option value="NIFTY">NIFTY</option>
-                      <option value="BANKNIFTY">BANKNIFTY</option>
-                    </select>
-                  </div>
-                  <div>
-                    <button 
-                      type="submit" 
-                      disabled={exporting}
-                      className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white rounded-xl py-2 px-4 text-xs font-bold hover:bg-indigo-500 transition-colors disabled:opacity-50"
-                    >
-                      {exporting ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <FileDown className="w-3.5 h-3.5" />
-                      )}
-                      <span>{exporting ? "Preparing..." : "Export CSV"}</span>
-                    </button>
-                  </div>
-                </form>
+                  <p className="text-xs text-slate-500 mb-6">
+                    Filters system signal predictions (BUY/SELL) and manual decisions logs with their outcomes.
+                  </p>
+                  <form onSubmit={handleObsExport} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Start Date</label>
+                      <input 
+                        type="date" 
+                        value={obsStartDate}
+                        onChange={(e) => setObsStartDate(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">End Date</label>
+                      <input 
+                        type="date" 
+                        value={obsEndDate}
+                        onChange={(e) => setObsEndDate(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-[9px] font-black text-slate-500 uppercase mb-2">Symbol</label>
+                      <select
+                        value={obsSymbol}
+                        onChange={(e) => setObsSymbol(e.target.value)}
+                        className="w-full bg-[#141a24] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="">All Symbols</option>
+                        <option value="NIFTY">NIFTY</option>
+                        <option value="BANKNIFTY">BANKNIFTY</option>
+                        <option value="SENSEX">SENSEX</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2 mt-2">
+                      <button 
+                        type="submit" 
+                        disabled={obsExporting}
+                        className="w-full flex items-center justify-center gap-2 bg-[#7c3aed] text-white rounded-xl py-2.5 px-4 text-xs font-bold hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
+                      >
+                        {obsExporting ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <FileDown className="w-3.5 h-3.5" />
+                        )}
+                        <span>{obsExporting ? "Preparing Log..." : "Download Daily Prediction CSV"}</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
               </div>
 
             </div>
