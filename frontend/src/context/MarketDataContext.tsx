@@ -257,9 +257,10 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const fetchSignalsHistory = useCallback(async (sym: string, isSilent = false) => {
+  const fetchSignalsHistory = useCallback(async (sym: string, date: string | null, isSilent = false) => {
     try {
-      const url = `${BACKEND_URL}/api/signals/history?symbol=${sym}`;
+      let url = `${BACKEND_URL}/api/signals/history?symbol=${sym}`;
+      if (date) url += `&date=${date}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch signals history");
       const d = await res.json();
@@ -299,7 +300,7 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
       fetchTrends(sym, expiry, date, isSilent),
       fetchLatestSignal(sym, date, isSilent),
       fetchSignalsStats(sym, isSilent),
-      fetchSignalsHistory(sym, isSilent)
+      fetchSignalsHistory(sym, date, isSilent)
     ]);
     
     const chainSuccess = results[0];

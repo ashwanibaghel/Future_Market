@@ -41,7 +41,7 @@ function formatBigNumber(n: number) {
 }
 
 import { useMarketData } from "@/context/MarketDataContext";
-import { formatIST } from "@/lib/timeUtils";
+import { formatIST, formatISTDate } from "@/lib/timeUtils";
 
 export default function DashboardPage() {
   const {
@@ -702,8 +702,8 @@ export default function DashboardPage() {
 
                                   return (
                                     <tr key={sig.id} className="border-b border-white/5 hover:bg-[#131920]/40 text-xs text-slate-300 transition-colors">
-                                      <td className="py-3 pl-2 text-slate-500 font-medium font-mono">
-                                        {formatIST(sig.timestamp, { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                      <td className="py-3 pl-2 text-slate-500 font-medium font-mono whitespace-nowrap">
+                                        {formatISTDate(sig.timestamp)}, {formatIST(sig.timestamp, { hour: '2-digit', minute: '2-digit', hour12: true })}
                                       </td>
                                       <td className="py-3">
                                         <span className={`px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${badgeColor}`}>

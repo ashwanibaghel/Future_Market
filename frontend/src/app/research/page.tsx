@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import TopBar from "@/components/TopBar";
+import { useMarketData } from "@/context/MarketDataContext";
 import { 
   Database, CheckCircle2, Clock, ShieldCheck, 
   BarChart2, FileDown, Calendar, RefreshCw, AlertCircle
@@ -42,6 +43,8 @@ interface DatasetStatus {
 }
 
 export default function ResearchPage() {
+  const { symbol, setSymbol, selectedDate, setSelectedDate } = useMarketData();
+
   const [data, setData] = useState<DatasetStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +91,13 @@ export default function ResearchPage() {
   const fetchStatus = async () => {
     try {
       setError(null);
-      const res = await fetch(`${BACKEND_URL}/api/ml-dataset-status`);
+      let url = `${BACKEND_URL}/api/ml-dataset-status`;
+      let params = [];
+      if (symbol) params.push(`symbol=${symbol}`);
+      if (selectedDate) params.push(`date=${selectedDate}`);
+      if (params.length > 0) url += "?" + params.join("&");
+
+      const res = await fetch(url);
       if (!res.ok) {
         throw new Error("Failed to fetch ML Feature Store status.");
       }
@@ -105,7 +114,7 @@ export default function ResearchPage() {
 
   useEffect(() => {
     fetchStatus();
-  }, []);
+  }, [symbol, selectedDate]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -214,8 +223,8 @@ export default function ResearchPage() {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopBar
-          symbol="NIFTY"
-          onSymbolChange={() => {}}
+          symbol={symbol}
+          onSymbolChange={setSymbol}
           onRefresh={handleRefresh}
           isRefreshing={refreshing}
           lastSyncTime={lastSync}

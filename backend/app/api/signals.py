@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -158,17 +158,26 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
     }
 
 @router.get("/signals/history")
-def get_signals_history(symbol: str = Query(..., description="Symbol (e.g. NIFTY)"), db: Session = Depends(get_db)):
+def get_signals_history(
+    symbol: str = Query(..., description="Symbol (e.g. NIFTY)"),
+    date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
+    db: Session = Depends(get_db)
+):
     """
     Returns signals history (BUY_CALL/BUY_PUT active recommendations).
     """
-
-    
     query = db.query(TradingSignal).filter(
         TradingSignal.symbol == symbol,
         TradingSignal.signal_type.in_(["BUY_CALL", "BUY_PUT"])
-    ).order_by(TradingSignal.timestamp.desc())
-    return query.all()
+    )
+    if date:
+        try:
+            target_date = datetime.strptime(date, "%Y-%m-%d").date()
+            query = query.filter(func.date(TradingSignal.timestamp) == target_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+            
+    return query.order_by(TradingSignal.timestamp.desc()).all()
 
 @router.post("/signals/{signal_id}/execute")
 def execute_signal(signal_id: int, db: Session = Depends(get_db)):

@@ -2,6 +2,7 @@ import io
 import csv
 import json
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -12,18 +13,34 @@ from app.db.models import MLFeatureSnapshot
 router = APIRouter()
 
 @router.get("/ml-dataset-status")
-def get_ml_dataset_status(db: Session = Depends(get_db)):
+def get_ml_dataset_status(
+    symbol: Optional[str] = Query(None),
+    date: Optional[str] = Query(None, description="Date (YYYY-MM-DD)"),
+    db: Session = Depends(get_db)
+):
     """
     Returns statistics and health metrics for the ML Feature Store.
     """
-    total_count = db.query(MLFeatureSnapshot).count()
-    completed_count = db.query(MLFeatureSnapshot).filter(MLFeatureSnapshot.status == "COMPLETED").count()
+    query = db.query(MLFeatureSnapshot)
+    if symbol:
+        query = query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        query = query.filter(MLFeatureSnapshot.market_date == date)
+        
+    total_count = query.count()
+    completed_count = query.filter(MLFeatureSnapshot.status == "COMPLETED").count()
     pending_count = total_count - completed_count
 
     # 1. Label quality breakdown
-    quality_counts = db.query(
+    quality_query = db.query(
         MLFeatureSnapshot.label_quality, func.count(MLFeatureSnapshot.id)
-    ).group_by(MLFeatureSnapshot.label_quality).all()
+    )
+    if symbol:
+        quality_query = quality_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        quality_query = quality_query.filter(MLFeatureSnapshot.market_date == date)
+    quality_counts = quality_query.group_by(MLFeatureSnapshot.label_quality).all()
+    
     label_quality_breakdown = {
         "FULL": 0,
         "PARTIAL": 0,
@@ -34,9 +51,15 @@ def get_ml_dataset_status(db: Session = Depends(get_db)):
         label_quality_breakdown[key] = count
 
     # 2. Timeframe breakdown
-    timeframe_counts = db.query(
+    timeframe_query = db.query(
         MLFeatureSnapshot.timeframe, func.count(MLFeatureSnapshot.id)
-    ).group_by(MLFeatureSnapshot.timeframe).all()
+    )
+    if symbol:
+        timeframe_query = timeframe_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        timeframe_query = timeframe_query.filter(MLFeatureSnapshot.market_date == date)
+    timeframe_counts = timeframe_query.group_by(MLFeatureSnapshot.timeframe).all()
+    
     timeframe_breakdown = {
         "1m": 0,
         "5m": 0,
@@ -47,9 +70,15 @@ def get_ml_dataset_status(db: Session = Depends(get_db)):
             timeframe_breakdown[t] = count
 
     # 3. Expiry type breakdown
-    expiry_counts = db.query(
+    expiry_query = db.query(
         MLFeatureSnapshot.expiry_type, func.count(MLFeatureSnapshot.id)
-    ).group_by(MLFeatureSnapshot.expiry_type).all()
+    )
+    if symbol:
+        expiry_query = expiry_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        expiry_query = expiry_query.filter(MLFeatureSnapshot.market_date == date)
+    expiry_counts = expiry_query.group_by(MLFeatureSnapshot.expiry_type).all()
+    
     expiry_breakdown = {
         "WEEKLY": 0,
         "MONTHLY": 0
@@ -59,15 +88,29 @@ def get_ml_dataset_status(db: Session = Depends(get_db)):
             expiry_breakdown[exp] = count
 
     # 4. Data Quality Metrics
-    avg_quality = db.query(func.avg(MLFeatureSnapshot.data_quality_score)).scalar() or 0.0
+    q_query = db.query(func.avg(MLFeatureSnapshot.data_quality_score))
+    if symbol:
+        q_query = q_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        q_query = q_query.filter(MLFeatureSnapshot.market_date == date)
+    avg_quality = q_query.scalar() or 0.0
     avg_quality = round(float(avg_quality), 2)
     
-    missing_iv_count = db.query(MLFeatureSnapshot).filter(
+    iv_query = db.query(MLFeatureSnapshot).filter(
         MLFeatureSnapshot.feature_flags.like('%"has_iv": false%')
-    ).count()
-    missing_pcr_count = db.query(MLFeatureSnapshot).filter(
+    )
+    pcr_query = db.query(MLFeatureSnapshot).filter(
         MLFeatureSnapshot.feature_flags.like('%"has_pcr": false%')
-    ).count()
+    )
+    if symbol:
+        iv_query = iv_query.filter(MLFeatureSnapshot.symbol == symbol)
+        pcr_query = pcr_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        iv_query = iv_query.filter(MLFeatureSnapshot.market_date == date)
+        pcr_query = pcr_query.filter(MLFeatureSnapshot.market_date == date)
+        
+    missing_iv_count = iv_query.count()
+    missing_pcr_count = pcr_query.count()
     
     missing_iv_pct = round((missing_iv_count / total_count * 100.0), 2) if total_count > 0 else 0.0
     missing_pcr_pct = round((missing_pcr_count / total_count * 100.0), 2) if total_count > 0 else 0.0
@@ -80,25 +123,40 @@ def get_ml_dataset_status(db: Session = Depends(get_db)):
     }
     
     # 15m counts
-    counts_15 = db.query(
+    c15_query = db.query(
         MLFeatureSnapshot.direction_15m, func.count(MLFeatureSnapshot.id)
-    ).filter(MLFeatureSnapshot.direction_15m.isnot(None)).group_by(MLFeatureSnapshot.direction_15m).all()
+    ).filter(MLFeatureSnapshot.direction_15m.isnot(None))
+    if symbol:
+        c15_query = c15_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        c15_query = c15_query.filter(MLFeatureSnapshot.market_date == date)
+    counts_15 = c15_query.group_by(MLFeatureSnapshot.direction_15m).all()
     for direction, count in counts_15:
         if direction in class_balance["15m"]:
             class_balance["15m"][direction] = count
 
     # 30m counts
-    counts_30 = db.query(
+    c30_query = db.query(
         MLFeatureSnapshot.direction_30m, func.count(MLFeatureSnapshot.id)
-    ).filter(MLFeatureSnapshot.direction_30m.isnot(None)).group_by(MLFeatureSnapshot.direction_30m).all()
+    ).filter(MLFeatureSnapshot.direction_30m.isnot(None))
+    if symbol:
+        c30_query = c30_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        c30_query = c30_query.filter(MLFeatureSnapshot.market_date == date)
+    counts_30 = c30_query.group_by(MLFeatureSnapshot.direction_30m).all()
     for direction, count in counts_30:
         if direction in class_balance["30m"]:
             class_balance["30m"][direction] = count
 
     # 60m counts
-    counts_60 = db.query(
+    c60_query = db.query(
         MLFeatureSnapshot.direction_60m, func.count(MLFeatureSnapshot.id)
-    ).filter(MLFeatureSnapshot.direction_60m.isnot(None)).group_by(MLFeatureSnapshot.direction_60m).all()
+    ).filter(MLFeatureSnapshot.direction_60m.isnot(None))
+    if symbol:
+        c60_query = c60_query.filter(MLFeatureSnapshot.symbol == symbol)
+    if date:
+        c60_query = c60_query.filter(MLFeatureSnapshot.market_date == date)
+    counts_60 = c60_query.group_by(MLFeatureSnapshot.direction_60m).all()
     for direction, count in counts_60:
         if direction in class_balance["60m"]:
             class_balance["60m"][direction] = count
