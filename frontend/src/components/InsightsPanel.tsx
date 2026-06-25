@@ -2,6 +2,7 @@
 
 import React from "react";
 import { MessageSquare, Flame, CheckCircle, AlertTriangle, HelpCircle } from "lucide-react";
+import { formatIST } from "@/lib/timeUtils";
 
 interface Insight {
   id: number;
@@ -94,7 +95,7 @@ export default function InsightsPanel({ insights = [] }: InsightsPanelProps) {
                 <span>{insight.category}</span>
                 <span className="w-1.5 h-1.5 bg-slate-850 rounded-full"></span>
                 <span>
-                  {new Date(insight.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatIST(insight.timestamp, { hour: '2-digit', minute: '2-digit', hour12: true })}
                 </span>
               </div>
             </div>
