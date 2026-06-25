@@ -139,7 +139,17 @@ class TestSignalEngine(unittest.TestCase):
         self.assertEqual(signal.signal_type, "BUY_CALL")
         self.assertEqual(signal.suggested_strike, "25000 CE")
         self.assertEqual(signal.strike_selection_reason, "ATM")
-        self.assertEqual(signal.matched_conditions, 6)
+        self.assertEqual(signal.signal_version, "v2")
+        self.assertGreaterEqual(signal.matched_conditions, 70)
+        self.assertEqual(signal.bullish_score, signal.matched_conditions)
+        self.assertGreater(signal.decision_margin, 0.0)
+        self.assertEqual(signal.lifecycle_state, "CREATED")
+        
+        # Verify MarketRegime table was populated
+        from app.db.models import MarketRegime
+        regime = self.db.query(MarketRegime).filter(MarketRegime.symbol == "NIFTY").first()
+        self.assertIsNotNone(regime)
+        self.assertEqual(regime.trend, "TRENDING")
 
     def test_sensex_signal_is_skipped(self):
         now = datetime.utcnow()

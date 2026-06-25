@@ -386,12 +386,15 @@ export default function DashboardPage() {
                               ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
                               : "bg-slate-800/60 text-slate-400 border-[#1e2433]";
 
-                            const confidencePct = latestSignal.total_conditions > 0
-                              ? Math.round((latestSignal.matched_conditions / latestSignal.total_conditions) * 100)
-                              : 0;
+                            const isV2 = latestSignal.signal_version === "v2";
+                            const confidencePct = isV2
+                              ? Math.round(latestSignal.confidence_ratio || 0)
+                              : (latestSignal.total_conditions > 0
+                                ? Math.round((latestSignal.matched_conditions / latestSignal.total_conditions) * 100)
+                                : 0);
 
                             // Parse reasons object
-                            let reasonsObj: Record<string, boolean> = {};
+                            let reasonsObj: Record<string, any> = {};
                             try {
                               reasonsObj = typeof latestSignal.reasons === "string"
                                 ? JSON.parse(latestSignal.reasons)
@@ -451,9 +454,13 @@ export default function DashboardPage() {
                                       </span>
                                     </div>
                                     <div>
-                                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Rule Match</span>
+                                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        {isV2 ? "Confidence Ratio" : "Rule Match"}
+                                      </span>
                                       <span className="text-xs font-bold text-slate-300">
-                                        {latestSignal.matched_conditions} of {latestSignal.total_conditions} rules
+                                        {isV2
+                                          ? `${confidencePct}% Bias (Margin: ${latestSignal.decision_margin || 0} pts)`
+                                          : `${latestSignal.matched_conditions} of ${latestSignal.total_conditions} rules`}
                                       </span>
                                     </div>
                                   </div>
@@ -463,40 +470,86 @@ export default function DashboardPage() {
                                 <div className="w-full h-px bg-white/5 my-5" />
 
                                 {/* Reasons list */}
-                                <h4 className="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">Rule Checklist</h4>
+                                <h4 className="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">
+                                  {isV2 ? `Rule Checklist (Dynamic Threshold: ${latestSignal.dynamic_threshold || 70} pts)` : "Rule Checklist"}
+                                </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                                  {[
-                                    { key: "market_state_bullish", label: "Market State is Bullish (Long Buildup/Short Covering)", active: isBuyCall },
-                                    { key: "market_state_bearish", label: "Market State is Bearish (Short Buildup/Long Unwinding)", active: isBuyPut },
-                                    { key: "above_vwap", label: "Spot Above Daily Options VWAP", active: isBuyCall },
-                                    { key: "below_vwap", label: "Spot Below Daily Options VWAP", active: isBuyPut },
-                                    { key: "above_ema20", label: "Spot Above EMA20", active: isBuyCall },
-                                    { key: "below_ema20", label: "Spot Below EMA20", active: isBuyPut },
-                                    { key: "price_up", label: "Price Increasing (Current vs Previous Spot)", active: isBuyCall },
-                                    { key: "price_down", label: "Price Decreasing (Current vs Previous Spot)", active: isBuyPut },
-                                    { key: "pcr_up", label: "PCR Improving (Increasing PCR)", active: isBuyCall },
-                                    { key: "pcr_down", label: "PCR Declining (Decreasing PCR)", active: isBuyPut },
-                                    { key: "strength_high_medium", label: "Buildup Strength is HIGH or MEDIUM", active: true }
-                                  ].filter((item) => item.active || isNoTrade).map((item) => {
-                                    const val = reasonsObj[item.key] ?? false;
-                                    return (
-                                      <div
-                                        key={item.key}
-                                        className="flex items-center gap-2.5 p-2 bg-[#060810]/40 border border-white/5 rounded-xl hover:border-[#1e2433] transition-colors"
-                                      >
-                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center border text-[9px] font-black ${
-                                          val
-                                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                            : "bg-[#0d1117] text-slate-600 border-[#1e2433]"
-                                        }`}>
-                                          {val ? "✓" : "✗"}
+                                  {isV2 ? (
+                                    Object.entries(reasonsObj).map(([ruleName, data]) => {
+                                      const ruleData = data as {
+                                        contribution?: number;
+                                        weight?: number;
+                                        raw?: string | number;
+                                        normalized?: number;
+                                      };
+                                      const contribution = ruleData.contribution ?? 0;
+                                      const maxVal = ruleData.weight ?? 15;
+                                      const isPassed = contribution > 0;
+                                      const rawVal = ruleData.raw ?? "";
+                                      return (
+                                        <div
+                                          key={ruleName}
+                                          className="flex items-center justify-between p-2.5 bg-[#060810]/40 border border-white/5 rounded-xl hover:border-[#1e2433] transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2.5">
+                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center border text-[9px] font-black ${
+                                              isPassed
+                                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                                : "bg-[#0d1117] text-slate-600 border-[#1e2433]"
+                                            }`}>
+                                              {isPassed ? "✓" : "✗"}
+                                            </div>
+                                            <div>
+                                              <span className={`text-[10px] font-bold block ${isPassed ? "text-slate-300" : "text-slate-500 font-medium"}`}>
+                                                {ruleName}
+                                              </span>
+                                              {rawVal && (
+                                                <span className="text-[8px] font-mono text-slate-500 block leading-tight mt-0.5 max-w-[180px] truncate" title={String(rawVal)}>
+                                                  {String(rawVal)}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <span className="text-[10px] font-mono font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded whitespace-nowrap">
+                                            {contribution} / {maxVal} pts
+                                          </span>
                                         </div>
-                                        <span className={`text-[10px] font-bold ${val ? "text-slate-300" : "text-slate-500 font-medium"}`}>
-                                          {item.label}
-                                        </span>
-                                      </div>
-                                    );
-                                  })}
+                                      );
+                                    })
+                                  ) : (
+                                    [
+                                      { key: "market_state_bullish", label: "Market State is Bullish (Long Buildup/Short Covering)", active: isBuyCall },
+                                      { key: "market_state_bearish", label: "Market State is Bearish (Short Buildup/Long Unwinding)", active: isBuyPut },
+                                      { key: "above_vwap", label: "Spot Above Daily Options VWAP", active: isBuyCall },
+                                      { key: "below_vwap", label: "Spot Below Daily Options VWAP", active: isBuyPut },
+                                      { key: "above_ema20", label: "Spot Above EMA20", active: isBuyCall },
+                                      { key: "below_ema20", label: "Spot Below EMA20", active: isBuyPut },
+                                      { key: "price_up", label: "Price Increasing (Current vs Previous Spot)", active: isBuyCall },
+                                      { key: "price_down", label: "Price Decreasing (Current vs Previous Spot)", active: isBuyPut },
+                                      { key: "pcr_up", label: "PCR Improving (Increasing PCR)", active: isBuyCall },
+                                      { key: "pcr_down", label: "PCR Declining (Decreasing PCR)", active: isBuyPut },
+                                      { key: "strength_high_medium", label: "Buildup Strength is HIGH or MEDIUM", active: true }
+                                    ].filter((item) => item.active || isNoTrade).map((item) => {
+                                      const val = reasonsObj[item.key] ?? false;
+                                      return (
+                                        <div
+                                          key={item.key}
+                                          className="flex items-center gap-2.5 p-2 bg-[#060810]/40 border border-white/5 rounded-xl hover:border-[#1e2433] transition-colors"
+                                        >
+                                          <div className={`w-4 h-4 rounded-full flex items-center justify-center border text-[9px] font-black ${
+                                            val
+                                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                              : "bg-[#0d1117] text-slate-600 border-[#1e2433]"
+                                          }`}>
+                                            {val ? "✓" : "✗"}
+                                          </div>
+                                          <span className={`text-[10px] font-bold ${val ? "text-slate-300" : "text-slate-500 font-medium"}`}>
+                                            {item.label}
+                                          </span>
+                                        </div>
+                                      );
+                                    })
+                                  )}
                                 </div>
 
                                 {/* Auditing Input Values */}

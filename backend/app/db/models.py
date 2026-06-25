@@ -401,6 +401,19 @@ class TradingSignal(Base):
     signal_version = Column(String(10), default="v1", index=True) # Version tracking for signal engines (v1, v2, etc.)
     was_executed = Column(Boolean, default=False) # User executed this signal manually or not
     
+    # Sprint 16 V2 additions
+    bullish_score = Column(Float, default=0.0)
+    bearish_score = Column(Float, default=0.0)
+    decision_margin = Column(Float, default=0.0)
+    confidence_ratio = Column(Float, default=0.0)
+    dynamic_threshold = Column(Float, default=70.0)
+    raw_signal = Column(String(20), default="NO_TRADE")
+    volume_z_score = Column(Float, default=0.0)
+    feature_version = Column(String(10), default="v2.0")
+    data_quality_score = Column(Integer, default=100)
+    top_contributors = Column(Text, nullable=True)  # JSON serialized list of top contributors
+    lifecycle_state = Column(String(20), default="CREATED")  # CREATED, STRENGTHENED, WEAKENED, CANCELLED, EXECUTED
+    
     # Excursion & evaluation parameters
     spot_after_15m = Column(Float, nullable=True)
     spot_after_30m = Column(Float, nullable=True)
@@ -474,5 +487,40 @@ class ObservationLog(Base):
     manual_decision_id = Column(Integer, ForeignKey("manual_trader_decisions.id", ondelete="SET NULL"), nullable=True)
     system_signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True)
     status = Column(String(20), default="PENDING", index=True)
+
+
+class TradeSession(Base):
+    __tablename__ = "trade_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(String(20), unique=True, index=True)  # YYYY-MM-DD
+    capital_allocated = Column(Float, default=0.0)
+    pnl = Column(Float, default=0.0)
+    emotion_rating = Column(String(20), nullable=True)  # e.g., CALM, GREEDY, ANXIOUS
+    stopped_reason = Column(String(50), nullable=True)  # e.g., DAILY_PROFIT_LIMIT, DAILY_LOSS_LIMIT, MANUAL
+    daily_limit_hit = Column(Boolean, default=False)
+    
+    # Advanced risk metrics
+    trade_count = Column(Integer, default=0)
+    winning_streak = Column(Integer, default=0)
+    losing_streak = Column(Integer, default=0)
+    max_drawdown_today = Column(Float, default=0.0)
+    max_profit_today = Column(Float, default=0.0)
+    stopped_automatically = Column(Boolean, default=False)
+    
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class MarketRegime(Base):
+    __tablename__ = "market_regimes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    trend = Column(String(20))           # TRENDING, RANGING
+    volatility = Column(String(20))      # HIGH, LOW
+    session_phase = Column(String(20))   # OPENING, MIDDAY, CLOSING
+    regime_confidence = Column(Float, default=0.0)
+
 
 

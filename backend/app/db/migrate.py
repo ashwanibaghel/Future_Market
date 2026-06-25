@@ -50,6 +50,28 @@ def run_migrations():
             else:
                 logger.info(f"Table '{table}' does not exist yet. It will be created by metadata.create_all.")
 
+        # V2 signal engine migrations
+        signal_table = "trading_signals"
+        signal_v2_columns = [
+            ("bullish_score", "FLOAT DEFAULT 0.0"),
+            ("bearish_score", "FLOAT DEFAULT 0.0"),
+            ("decision_margin", "FLOAT DEFAULT 0.0"),
+            ("confidence_ratio", "FLOAT DEFAULT 0.0"),
+            ("dynamic_threshold", "FLOAT DEFAULT 70.0"),
+            ("raw_signal", "VARCHAR(20) DEFAULT 'NO_TRADE'"),
+            ("volume_z_score", "FLOAT DEFAULT 0.0"),
+            ("feature_version", "VARCHAR(10) DEFAULT 'v2.0'"),
+            ("data_quality_score", "INTEGER DEFAULT 100"),
+            ("top_contributors", "TEXT"),
+            ("lifecycle_state", "VARCHAR(20) DEFAULT 'CREATED'"),
+        ]
+        result = connection.execute(text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{signal_table}'")).fetchone()
+        if result:
+            for col_name, col_type in signal_v2_columns:
+                check_and_add_column(connection, signal_table, col_name, col_type)
+        else:
+            logger.info(f"Table '{signal_table}' does not exist yet.")
+
     # Create any missing tables (like manual_trader_decisions and observation_logs)
     logger.info("Creating any missing tables from metadata...")
     Base.metadata.create_all(bind=engine)
