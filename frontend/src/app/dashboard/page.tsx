@@ -355,21 +355,8 @@ export default function DashboardPage() {
 
               {activeTab === "signals" && (
                 <div className="flex flex-col gap-6">
-                  {symbol === "SENSEX" ? (
-                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-8 text-center max-w-xl mx-auto my-8">
-                      <Lightbulb className="w-8 h-8 text-amber-400 mx-auto mb-3" />
-                      <h3 className="text-sm font-bold text-slate-200 mb-1.5 uppercase tracking-wide">
-                        Sensex Option Chain & Signals Disabled
-                      </h3>
-                      <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                        SENSEX operates on the BSE exchange and lacks direct options data, PCR, open interest, and market state metrics on this platform.
-                        To avoid dataset pollution and fake predictions, active buy/sell signals are disabled. We only track its live spot price.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Decision + Performance Grid */}
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Decision + Performance Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Decision Panel Card (2/3 columns) */}
                         <div className="lg:col-span-2 flex flex-col gap-6">
                           {(() => {
@@ -712,10 +699,8 @@ export default function DashboardPage() {
                           </div>
                         )}
                       </div>
-                    </>
+                    </div>
                   )}
-                </div>
-              )}
 
             </div>
           )}
