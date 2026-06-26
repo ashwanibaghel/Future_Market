@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { createChart, ColorType } from "lightweight-charts";
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries } from "lightweight-charts";
 import { Activity, TrendingUp, Calendar } from "lucide-react";
 
 interface CandlestickChartProps {
@@ -124,7 +124,7 @@ export default function CandlestickChart({ symbol }: CandlestickChartProps) {
           chartRef.current = chart;
 
           // Add Candlestick Series
-          const candlestickSeries = chart.addCandlestickSeries({
+          const candlestickSeries = chart.addSeries(CandlestickSeries, {
             upColor: "#22c55e",
             downColor: "#ef4444",
             borderVisible: false,
@@ -134,7 +134,7 @@ export default function CandlestickChart({ symbol }: CandlestickChartProps) {
           candlestickSeriesRef.current = candlestickSeries;
 
           // Add Volume Series at the bottom
-          const volumeSeries = chart.addHistogramSeries({
+          const volumeSeries = chart.addSeries(HistogramSeries, {
             color: "#3b82f6",
             priceFormat: {
               type: "volume",
@@ -151,7 +151,7 @@ export default function CandlestickChart({ symbol }: CandlestickChartProps) {
           volumeSeriesRef.current = volumeSeries;
 
           // Add EMA line series overlay for trend
-          const emaSeries = chart.addLineSeries({
+          const emaSeries = chart.addSeries(LineSeries, {
             color: "#fbbf24",
             lineWidth: 1.5,
             title: "EMA 9",
