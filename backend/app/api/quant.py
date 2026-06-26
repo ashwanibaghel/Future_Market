@@ -680,6 +680,57 @@ def get_market_chart(
                     "volume": int(v) if v else 0
                 })
                 
+            if range_str == "1d" and len(candles) == 0:
+                # Fallback: Fetch 5d range and extract only the last active trading day's candles
+                params["range"] = "5d"
+                resp_fb = client.get(url, headers=headers, params=params, timeout=10.0)
+                if resp_fb.status_code == 200:
+                    fb_data = resp_fb.json()
+                    fb_chart = fb_data.get("chart", {})
+                    fb_result = fb_chart.get("result", [])
+                    if fb_result:
+                        fb_res = fb_result[0]
+                        fb_timestamps = fb_res.get("timestamp", [])
+                        fb_indicators = fb_res.get("indicators", {})
+                        fb_quote = fb_indicators.get("quote", [{}])[0]
+                        
+                        fb_opens = fb_quote.get("open", [])
+                        fb_highs = fb_quote.get("high", [])
+                        fb_lows = fb_quote.get("low", [])
+                        fb_closes = fb_quote.get("close", [])
+                        fb_volumes = fb_quote.get("volume", [])
+                        
+                        temp_candles = []
+                        for i in range(len(fb_timestamps)):
+                            t = fb_timestamps[i]
+                            o = fb_opens[i]
+                            h = fb_highs[i]
+                            l = fb_lows[i]
+                            c = fb_closes[i]
+                            v = fb_volumes[i] if i < len(fb_volumes) else 0
+                            
+                            if o is None or h is None or l is None or c is None:
+                                continue
+                            temp_candles.append({
+                                "time": int(t),
+                                "open": float(o),
+                                "high": float(h),
+                                "low": float(l),
+                                "close": float(c),
+                                "volume": int(v) if v else 0
+                            })
+                        
+                        if temp_candles:
+                            from datetime import datetime, timezone, timedelta
+                            ist_offset = timezone(timedelta(hours=5, minutes=30))
+                            last_candle_time = datetime.fromtimestamp(temp_candles[-1]["time"], tz=ist_offset)
+                            last_date_str = last_candle_time.strftime("%Y-%m-%d")
+                            
+                            candles = [
+                                c for c in temp_candles
+                                if datetime.fromtimestamp(c["time"], tz=ist_offset).strftime("%Y-%m-%d") == last_date_str
+                            ]
+                
             return {
                 "symbol": symbol.upper(),
                 "ticker": ticker,
