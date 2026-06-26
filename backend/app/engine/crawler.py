@@ -59,10 +59,11 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
         db.commit()
         
         # 2. Process each expiry date snapshot
+        cycle_timestamp = datetime.utcnow()
         for result in results:
             start_time = datetime.utcnow()
             snapshot = OptionChainSnapshot(
-                timestamp=datetime.utcnow(),
+                timestamp=cycle_timestamp,
                 symbol=result['symbol'],
                 instrument_type="INDEX" if symbol in ["NIFTY", "BANKNIFTY", "SENSEX"] else "STOCK",
                 expiry_date=result['expiry_date'],

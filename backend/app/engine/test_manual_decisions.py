@@ -120,5 +120,80 @@ class TestManualDecisions(unittest.TestCase):
         self.assertEqual(log_entry.result_15m, "LOSS")
         self.assertEqual(log_entry.status, "PARTIAL")
 
+    def test_self_healing_routine(self):
+        # Create a TradingSignal which is COMPLETED but has PENDING outcomes
+        now = datetime.utcnow()
+        sig = TradingSignal(
+            timestamp=now - timedelta(hours=2),
+            symbol="NIFTY",
+            expiry_date="2026-06-25",
+            spot_price=25000.0,
+            signal_type="BUY_CALL",
+            outcome_15m="WIN",
+            outcome_30m="PENDING",
+            outcome_60m="WIN",
+            status="COMPLETED"
+        )
+        self.db.add(sig)
+        self.db.commit()
+
+        # Run evaluate_trading_signals (which calls cleanup_completed_pending_outcomes)
+        evaluate_trading_signals(self.db)
+        
+        self.db.refresh(sig)
+        # outcome_30m should be resolved to FLAT
+        self.assertEqual(sig.outcome_30m, "FLAT")
+        self.assertEqual(sig.outcome_15m, "WIN")
+        self.assertEqual(sig.outcome_60m, "WIN")
+
+    def test_missing_30m_snapshot_completed_outcome(self):
+        # Create a new TradingSignal
+        now = datetime.utcnow()
+        sig = TradingSignal(
+            timestamp=now - timedelta(minutes=65),
+            symbol="NIFTY",
+            expiry_date="2026-06-25",
+            spot_price=25000.0,
+            signal_type="BUY_CALL",
+            outcome_15m="PENDING",
+            outcome_30m="PENDING",
+            outcome_60m="PENDING",
+            status="PENDING"
+        )
+        self.db.add(sig)
+        
+        # Add 15m snapshot (WIN)
+        snap_15m = OptionChainSnapshot(
+            timestamp=now - timedelta(minutes=65) + timedelta(minutes=15),
+            symbol="NIFTY",
+            expiry_date="2026-06-25",
+            spot_price=25020.0,
+            collection_status="SUCCESS"
+        )
+        self.db.add(snap_15m)
+        
+        # Do NOT add 30m snapshot (missing)
+        
+        # Add 60m snapshot (WIN)
+        snap_60m = OptionChainSnapshot(
+            timestamp=now - timedelta(minutes=65) + timedelta(minutes=60),
+            symbol="NIFTY",
+            expiry_date="2026-06-25",
+            spot_price=25030.0,
+            collection_status="SUCCESS"
+        )
+        self.db.add(snap_60m)
+        
+        self.db.commit()
+        
+        # Evaluate outcomes
+        evaluate_trading_signals(self.db)
+        
+        self.db.refresh(sig)
+        self.assertEqual(sig.status, "COMPLETED")
+        self.assertEqual(sig.outcome_15m, "WIN")
+        self.assertEqual(sig.outcome_30m, "FLAT")  # Missing 30m resolved to FLAT
+        self.assertEqual(sig.outcome_60m, "WIN")
+
 if __name__ == "__main__":
     unittest.main()

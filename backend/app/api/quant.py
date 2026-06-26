@@ -607,6 +607,89 @@ def get_historical_trends(
     }
 
 
+@router.get("/market-chart")
+def get_market_chart(
+    symbol: str = Query("NIFTY", description="Symbol name"),
+    range_str: str = Query("3mo", alias="range", description="Date range (e.g. 1d, 5d, 1mo, 3mo, 1y)"),
+    interval: str = Query("1d", description="Bar interval (e.g. 5m, 15m, 1h, 1d)"),
+):
+    # Mapping to Yahoo Finance tickers
+    ticker_map = {
+        "NIFTY": "^NSEI",
+        "BANKNIFTY": "^NSEBANK",
+        "SENSEX": "^BSESN",
+        "FINNIFTY": "^NSEFIN",
+        "HDFCBANK": "HDFCBANK.NS",
+        "ICICIBANK": "ICICIBANK.NS",
+        "RELIANCE": "RELIANCE.NS",
+        "INFY": "INFY.NS",
+        "TCS": "TCS.NS"
+    }
+    ticker = ticker_map.get(symbol.upper(), f"{symbol.upper()}.NS")
+    
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    params = {
+        "range": range_str,
+        "interval": interval
+    }
+    
+    import httpx
+    try:
+        with httpx.Client(follow_redirects=True) as client:
+            resp = client.get(url, headers=headers, params=params, timeout=10.0)
+            resp.raise_for_status()
+            data = resp.json()
+            
+            chart = data.get("chart", {})
+            result = chart.get("result", [])
+            if not result:
+                return {"error": "No data returned from provider", "candles": []}
+                
+            res_data = result[0]
+            timestamps = res_data.get("timestamp", [])
+            indicators = res_data.get("indicators", {})
+            quote = indicators.get("quote", [{}])[0]
+            
+            opens = quote.get("open", [])
+            highs = quote.get("high", [])
+            lows = quote.get("low", [])
+            closes = quote.get("close", [])
+            volumes = quote.get("volume", [])
+            
+            candles = []
+            for i in range(len(timestamps)):
+                t = timestamps[i]
+                o = opens[i]
+                h = highs[i]
+                l = lows[i]
+                c = closes[i]
+                v = volumes[i] if i < len(volumes) else 0
+                
+                if o is None or h is None or l is None or c is None:
+                    continue
+                    
+                candles.append({
+                    "time": int(t),
+                    "open": float(o),
+                    "high": float(h),
+                    "low": float(l),
+                    "close": float(c),
+                    "volume": int(v) if v else 0
+                })
+                
+            return {
+                "symbol": symbol.upper(),
+                "ticker": ticker,
+                "range": range_str,
+                "interval": interval,
+                "candles": candles
+            }
+    except Exception as e:
+        return {"error": str(e), "candles": []}
+
 
 @router.get("/quant/benchmark-sr")
 def benchmark_support_resistance(

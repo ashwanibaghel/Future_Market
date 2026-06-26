@@ -148,9 +148,10 @@ def compare_performance(symbol: Optional[str] = Query(None), db: Session = Depen
     losses = sum(1 for d in resolved if d.outcome_60m == "LOSS" or (d.outcome_60m == "PENDING" and (d.outcome_30m == "LOSS" or d.outcome_15m == "LOSS")))
     flats = resolved_count - wins - losses
     
-    win_rate = (wins / resolved_count * 100) if resolved_count > 0 else 0.0
+    win_rate_denom = wins + losses
+    win_rate = (wins / win_rate_denom * 100) if win_rate_denom > 0 else 0.0
     
-    # Compare with matched system signals
+    # Compare with matched system signals (excluding flats from denominator)
     agreed_count = 0
     agreed_wins = 0
     agreed_resolved = 0
@@ -169,16 +170,18 @@ def compare_performance(symbol: Optional[str] = Query(None), db: Session = Depen
                 # Check resolved status
                 is_resolved = (d.status == "COMPLETED")
                 is_win = d.outcome_60m == "WIN" or (d.outcome_60m == "PENDING" and (d.outcome_30m == "WIN" or d.outcome_15m == "WIN"))
+                is_loss = d.outcome_60m == "LOSS" or (d.outcome_60m == "PENDING" and (d.outcome_30m == "LOSS" or d.outcome_15m == "LOSS"))
+                is_decisive = is_win or is_loss
                 
                 if is_agreed:
                     agreed_count += 1
-                    if is_resolved:
+                    if is_resolved and is_decisive:
                         agreed_resolved += 1
                         if is_win:
                             agreed_wins += 1
                 else:
                     disagreed_count += 1
-                    if is_resolved:
+                    if is_resolved and is_decisive:
                         disagreed_resolved += 1
                         if is_win:
                             disagreed_wins += 1
@@ -186,10 +189,12 @@ def compare_performance(symbol: Optional[str] = Query(None), db: Session = Depen
             # No system signal matched (effectively disagreed as system was NO_TRADE)
             disagreed_count += 1
             if d.status == "COMPLETED":
-                disagreed_resolved += 1
                 is_win = d.outcome_60m == "WIN" or (d.outcome_60m == "PENDING" and (d.outcome_30m == "WIN" or d.outcome_15m == "WIN"))
-                if is_win:
-                    disagreed_wins += 1
+                is_loss = d.outcome_60m == "LOSS" or (d.outcome_60m == "PENDING" and (d.outcome_30m == "LOSS" or d.outcome_15m == "LOSS"))
+                if is_win or is_loss:
+                    disagreed_resolved += 1
+                    if is_win:
+                        disagreed_wins += 1
 
     agreed_win_rate = (agreed_wins / agreed_resolved * 100) if agreed_resolved > 0 else 0.0
     disagreed_win_rate = (disagreed_wins / disagreed_resolved * 100) if disagreed_resolved > 0 else 0.0

@@ -295,13 +295,62 @@ def get_success_threshold_points(symbol: str, spot_price: float) -> float:
         return max(0.1, round(spot_price * 0.0005, 2))
 
 
+def cleanup_completed_pending_outcomes(db: Session):
+    """
+    Finds completed signals and manual decisions that still have PENDING outcomes
+    and resolves them to FLAT (meaning the snapshots were missing).
+    """
+    logger.info("Running self-healing routine for completed records with pending outcomes...")
+    
+    # 1. Fix TradingSignals
+    pending_signals = db.query(TradingSignal).filter(
+        TradingSignal.status == "COMPLETED",
+        (TradingSignal.outcome_15m == "PENDING") | 
+        (TradingSignal.outcome_30m == "PENDING") | 
+        (TradingSignal.outcome_60m == "PENDING")
+    ).all()
+    
+    for signal in pending_signals:
+        if signal.outcome_15m == "PENDING":
+            signal.outcome_15m = "FLAT"
+        if signal.outcome_30m == "PENDING":
+            signal.outcome_30m = "FLAT"
+        if signal.outcome_60m == "PENDING":
+            signal.outcome_60m = "FLAT"
+            
+    # 2. Fix ManualTraderDecisions
+    pending_decisions = db.query(ManualTraderDecision).filter(
+        ManualTraderDecision.status == "COMPLETED",
+        (ManualTraderDecision.outcome_15m == "PENDING") | 
+        (ManualTraderDecision.outcome_30m == "PENDING") | 
+        (ManualTraderDecision.outcome_60m == "PENDING")
+    ).all()
+    
+    for decision in pending_decisions:
+        if decision.outcome_15m == "PENDING":
+            decision.outcome_15m = "FLAT"
+        if decision.outcome_30m == "PENDING":
+            decision.outcome_30m = "FLAT"
+        if decision.outcome_60m == "PENDING":
+            decision.outcome_60m = "FLAT"
+            
+    total_fixed = len(pending_signals) + len(pending_decisions)
+    if total_fixed > 0:
+        db.commit()
+        logger.info(f"Self-healed {len(pending_signals)} signals and {len(pending_decisions)} manual decisions.")
+
+
 def evaluate_trading_signals(db: Session):
     """
     Scans pending trading signals and updates their outcomes (15m, 30m, 60m)
     using future snapshots.
     """
+    # Run self-healing first to clean up any past corrupted states
+    cleanup_completed_pending_outcomes(db)
+    
     logger.info("Evaluating pending trading signals...")
     from app.db.models import TradingSignal, OptionChainSnapshot
+
     
     pending_signals = db.query(TradingSignal).filter(TradingSignal.status != "COMPLETED").all()
     if not pending_signals:
@@ -416,13 +465,13 @@ def evaluate_trading_signals(db: Session):
                 
                 signal.status = "COMPLETED"
 
-        # Age out/Complete if older than 65 minutes
-        if age_seconds > 3900 and signal.status != "COMPLETED":
-            if signal.spot_after_15m is None:
+        # Consolidate completion/age-out and resolve any remaining pending outcomes
+        if signal.status == "COMPLETED" or age_seconds > 3900:
+            if signal.outcome_15m == "PENDING" or signal.spot_after_15m is None:
                 signal.outcome_15m = "FLAT"
-            if signal.spot_after_30m is None:
+            if signal.outcome_30m == "PENDING" or signal.spot_after_30m is None:
                 signal.outcome_30m = "FLAT"
-            if signal.spot_after_60m is None:
+            if signal.outcome_60m == "PENDING" or signal.spot_after_60m is None:
                 signal.outcome_60m = "FLAT"
             signal.status = "COMPLETED"
 
@@ -596,13 +645,13 @@ def evaluate_manual_decisions(db: Session):
                 
                 decision.status = "COMPLETED"
 
-        # Age out/Complete if older than 65 minutes
-        if age_seconds > 3900 and decision.status != "COMPLETED":
-            if decision.spot_after_15m is None:
+        # Consolidate completion/age-out and resolve any remaining pending outcomes
+        if decision.status == "COMPLETED" or age_seconds > 3900:
+            if decision.outcome_15m == "PENDING" or decision.spot_after_15m is None:
                 decision.outcome_15m = "FLAT"
-            if decision.spot_after_30m is None:
+            if decision.outcome_30m == "PENDING" or decision.spot_after_30m is None:
                 decision.outcome_30m = "FLAT"
-            if decision.spot_after_60m is None:
+            if decision.outcome_60m == "PENDING" or decision.spot_after_60m is None:
                 decision.outcome_60m = "FLAT"
             decision.status = "COMPLETED"
 

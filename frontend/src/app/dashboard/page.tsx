@@ -7,6 +7,7 @@ import TopBar from "@/components/TopBar";
 import StatCard from "@/components/StatCard";
 import SupportResistance from "@/components/SupportResistance";
 import HistoricalCharts from "@/components/HistoricalCharts";
+import CandlestickChart from "@/components/CandlestickChart";
 import MarketStateTimeline from "@/components/MarketStateTimeline";
 import SupportResistanceHeatmap from "@/components/SupportResistanceHeatmap";
 import OIWallMap from "@/components/OIWallMap";
@@ -67,7 +68,7 @@ export default function DashboardPage() {
     executeSignal,
   } = useMarketData();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "trends" | "signals">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "chart" | "trends" | "signals">("overview");
 
   const insights = insightsData.slice(0, 5);
 
@@ -203,6 +204,16 @@ export default function DashboardPage() {
                   }`}
                 >
                   Intraday Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab("chart")}
+                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                    activeTab === "chart"
+                      ? "border-indigo-500 text-indigo-400"
+                      : "border-transparent text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  Candlestick Chart
                 </button>
                 <button
                   onClick={() => setActiveTab("trends")}
@@ -344,6 +355,10 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </>
+              )}
+
+              {activeTab === "chart" && (
+                <CandlestickChart symbol={symbol} />
               )}
 
               {activeTab === "trends" && (

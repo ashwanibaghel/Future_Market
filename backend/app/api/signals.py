@@ -81,7 +81,7 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
     
     total = len(active_signals)
     
-    # Timeframe accuracy
+    # Timeframe accuracy (excluding FLATS from win rate denominator)
     tf_stats = {}
     for tf in ["15m", "30m", "60m"]:
         tf_total = 0
@@ -98,7 +98,8 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
                     tf_losses += 1
                 elif outcome == "FLAT":
                     tf_flats += 1
-        acc = (tf_wins / tf_total * 100) if tf_total > 0 else 0.0
+        tf_decisive = tf_wins + tf_losses
+        acc = (tf_wins / tf_decisive * 100) if tf_decisive > 0 else 0.0
         tf_stats[tf] = {
             "total": tf_total,
             "wins": tf_wins,
@@ -107,7 +108,7 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
             "accuracy_pct": round(acc, 2)
         }
         
-    # State accuracy (using 60m or latest resolved outcome)
+    # State accuracy (using 60m or latest resolved outcome, excluding FLATS)
     state_stats = {}
     states = list(set(sig.market_state for sig in active_signals if sig.market_state))
     for state in states:
@@ -116,7 +117,7 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
         for sig in active_signals:
             if sig.market_state == state:
                 outcome = sig.outcome_60m if sig.outcome_60m != "PENDING" else (sig.outcome_30m if sig.outcome_30m != "PENDING" else sig.outcome_15m)
-                if outcome != "PENDING":
+                if outcome in ["WIN", "LOSS"]:
                     state_total += 1
                     if outcome == "WIN":
                         state_wins += 1
@@ -127,7 +128,7 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
             "accuracy_pct": round(acc, 2)
         }
         
-    # Overall Accuracy
+    # Overall Accuracy (excluding FLATS from win rate denominator)
     overall_total = 0
     overall_wins = 0
     overall_losses = 0
@@ -143,7 +144,8 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
             elif outcome == "FLAT":
                 overall_flats += 1
                 
-    overall_acc = (overall_wins / overall_total * 100) if overall_total > 0 else 0.0
+    overall_decisive = overall_wins + overall_losses
+    overall_acc = (overall_wins / overall_decisive * 100) if overall_decisive > 0 else 0.0
     
     return {
         "symbol": symbol,
