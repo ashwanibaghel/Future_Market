@@ -97,12 +97,64 @@ export default function CandlestickChart({ symbol }: CandlestickChartProps) {
               vertLines: { color: "#1f2937" },
               horzLines: { color: "#1f2937" },
             },
+            localization: {
+              locale: "en-IN",
+              timeFormatter: (time: any) => {
+                let date: Date;
+                if (typeof time === "number") {
+                  date = new Date(time * 1000);
+                } else if (typeof time === "string") {
+                  date = new Date(time);
+                } else if (time && typeof time === "object") {
+                  date = new Date(time.year, time.month - 1, time.day);
+                } else {
+                  return "";
+                }
+                return new Intl.DateTimeFormat("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                  timeZone: "Asia/Kolkata"
+                }).format(date);
+              }
+            },
             rightPriceScale: {
               borderColor: "#1e2433",
             },
             timeScale: {
               borderColor: "#1e2433",
               timeVisible: timeframe.interval.endsWith("m") || timeframe.interval.endsWith("h"),
+              tickMarkFormatter: (time: any, tickMarkType: any, locale: string) => {
+                let date: Date;
+                if (typeof time === "number") {
+                  date = new Date(time * 1000);
+                } else if (typeof time === "string") {
+                  date = new Date(time);
+                } else if (time && typeof time === "object") {
+                  date = new Date(time.year, time.month - 1, time.day);
+                } else {
+                  return null;
+                }
+                
+                const options: Intl.DateTimeFormatOptions = { timeZone: "Asia/Kolkata" };
+                if (tickMarkType === 0) {
+                  options.year = "numeric";
+                } else if (tickMarkType === 1) {
+                  options.month = "short";
+                } else if (tickMarkType === 2) {
+                  options.day = "numeric";
+                  options.month = "short";
+                } else {
+                  options.hour = "2-digit";
+                  options.minute = "2-digit";
+                  options.hour12 = false;
+                }
+                
+                return new Intl.DateTimeFormat("en-IN", options).format(date);
+              }
             },
             crosshair: {
               mode: 1, // Magnet mode
@@ -187,9 +239,10 @@ export default function CandlestickChart({ symbol }: CandlestickChartProps) {
                 let timeStr = "";
                 if (typeof param.time === "number") {
                   const date = new Date(param.time * 1000);
-                  timeStr = timeframe.interval.endsWith("d")
-                    ? date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                    : date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) + " " + date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+                  const options: Intl.DateTimeFormatOptions = timeframe.interval.endsWith("d")
+                    ? { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }
+                    : { hour: "2-digit", minute: "2-digit", hour12: false, day: "numeric", month: "short", timeZone: "Asia/Kolkata" };
+                  timeStr = new Intl.DateTimeFormat("en-IN", options).format(date);
                 }
 
                 setHoverData({
