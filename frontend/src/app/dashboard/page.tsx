@@ -66,6 +66,8 @@ export default function DashboardPage() {
     signalsLoading,
     signalsError,
     executeSignal,
+    signalVersion,
+    setSignalVersion,
   } = useMarketData();
 
   const [activeTab, setActiveTab] = useState<"overview" | "chart" | "trends" | "signals">("overview");
@@ -371,6 +373,42 @@ export default function DashboardPage() {
 
               {activeTab === "signals" && (
                 <div className="flex flex-col gap-6">
+                  {/* Version Toggle Selector (A/B Test Panel) */}
+                  <div className="flex items-center justify-between bg-[#0b0e14]/80 border border-[#1e2433] rounded-2xl p-4 gap-4 flex-wrap">
+                    <div>
+                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        Advisor Model Version
+                      </span>
+                      <span className="text-xs font-bold text-slate-300">
+                        {signalVersion === "v2" 
+                          ? "V2 Model (Standard Calibrated Baseline)" 
+                          : "V2.5 Model (A/B Test Calibrated Sensitivity)"}
+                      </span>
+                    </div>
+                    <div className="flex bg-[#07090e] border border-white/5 p-1 rounded-xl">
+                      <button
+                        onClick={() => setSignalVersion("v2")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                          signalVersion === "v2"
+                            ? "bg-slate-800 text-slate-100 shadow-md"
+                            : "text-slate-500 hover:text-slate-300"
+                        }`}
+                      >
+                        V2 Baseline
+                      </button>
+                      <button
+                        onClick={() => setSignalVersion("v2.5")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                          signalVersion === "v2.5"
+                            ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-md shadow-indigo-500/5"
+                            : "text-slate-500 hover:text-slate-300 border border-transparent"
+                        }`}
+                      >
+                        V2.5 A/B Test
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Decision + Performance Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Decision Panel Card (2/3 columns) */}
@@ -402,7 +440,7 @@ export default function DashboardPage() {
                               ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
                               : "bg-slate-800/60 text-slate-400 border-[#1e2433]";
 
-                            const isV2 = latestSignal.signal_version === "v2";
+                            const isV2 = latestSignal.signal_version === "v2" || latestSignal.signal_version === "v2.5";
                             const confidencePct = isV2
                               ? Math.round(latestSignal.confidence_ratio || 0)
                               : (latestSignal.total_conditions > 0

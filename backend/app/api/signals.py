@@ -13,13 +13,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/signals/latest")
-def get_latest_signal(symbol: str = Query(..., description="Symbol (e.g. NIFTY, SENSEX)"), date: str = Query(None, description="Date in YYYY-MM-DD format"), db: Session = Depends(get_db)):
+def get_latest_signal(
+    symbol: str = Query(..., description="Symbol (e.g. NIFTY, SENSEX)"),
+    date: str = Query(None, description="Date in YYYY-MM-DD format"),
+    version: str = Query("v2", description="Signal engine version (v2, v2.5)"),
+    db: Session = Depends(get_db)
+):
     """
     Returns the latest signal generated (or NO_TRADE) along with strike, confidence, reasons, and timestamp.
     """
 
 
-    query = db.query(TradingSignal).filter(TradingSignal.symbol == symbol)
+    query = db.query(TradingSignal).filter(
+        TradingSignal.symbol == symbol,
+        TradingSignal.signal_version == version
+    )
     if date:
         try:
             target_date = datetime.strptime(date, "%Y-%m-%d").date()
@@ -58,7 +66,7 @@ def get_latest_signal(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
                 "strength": "LOW"
             }),
             "market_state": "NEUTRAL",
-            "signal_version": "v2",
+            "signal_version": version,
             "was_executed": False,
             "outcome_15m": "PENDING",
             "outcome_30m": "PENDING",
@@ -70,7 +78,11 @@ def get_latest_signal(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
     return latest_signal
 
 @router.get("/signals/stats")
-def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, SENSEX)"), db: Session = Depends(get_db)):
+def get_signals_stats(
+    symbol: str = Query(..., description="Symbol (e.g. NIFTY, SENSEX)"),
+    version: str = Query("v2", description="Signal engine version (v2, v2.5)"),
+    db: Session = Depends(get_db)
+):
     """
     Returns signals predictive performance statistics.
     """
@@ -78,6 +90,7 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
 
     active_signals = db.query(TradingSignal).filter(
         TradingSignal.symbol == symbol,
+        TradingSignal.signal_version == version,
         TradingSignal.signal_type.in_(["BUY_CALL", "BUY_PUT"])
     ).all()
     
@@ -165,6 +178,7 @@ def get_signals_stats(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
 def get_signals_history(
     symbol: str = Query(..., description="Symbol (e.g. NIFTY)"),
     date: Optional[str] = Query(None, description="Date in YYYY-MM-DD format"),
+    version: str = Query("v2", description="Signal engine version (v2, v2.5)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -172,6 +186,7 @@ def get_signals_history(
     """
     query = db.query(TradingSignal).filter(
         TradingSignal.symbol == symbol,
+        TradingSignal.signal_version == version,
         TradingSignal.signal_type.in_(["BUY_CALL", "BUY_PUT"])
     )
     if date:

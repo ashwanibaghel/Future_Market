@@ -123,9 +123,10 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
                 # Capture ML features for timeframe 1m
                 capture_ml_features(db, snapshot.id, timeframe="1m")
                 
-                # Generate Trading Signal
+                # Generate Trading Signals (V2 and V2.5 parallel A/B test)
                 from app.engine.signals import generate_trading_signal
-                generate_trading_signal(db, snapshot.id)
+                generate_trading_signal(db, snapshot.id, version="v2")
+                generate_trading_signal(db, snapshot.id, version="v2.5")
             except Exception as ae:
                 logger.exception(f"Failed to generate analytics snapshot/signals for {symbol} expiry {result['expiry_date']}: {str(ae)}")
                 

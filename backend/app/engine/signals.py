@@ -46,7 +46,7 @@ def calculate_daily_options_vwap(db: Session, symbol: str, snapshot_timestamp: d
         return 0.0
     return total_val / total_vol
 
-def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
+def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") -> TradingSignal:
     """
     Evaluates institutional-grade rule-based signals (v2 weighted scoring) for a snapshot.
     Saves and returns the TradingSignal record, skipping SENSEX when no strikes are present.
@@ -57,8 +57,11 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         logger.warning(f"Snapshot with ID {snapshot_id} not found.")
         return None
 
-    # Check if signal already exists for this snapshot
-    existing = db.query(TradingSignal).filter(TradingSignal.snapshot_id == snapshot_id).first()
+    # Check if signal already exists for this snapshot and version
+    existing = db.query(TradingSignal).filter(
+        TradingSignal.snapshot_id == snapshot_id,
+        TradingSignal.signal_version == version
+    ).first()
     if existing:
         return existing
 
@@ -131,9 +134,23 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         avg_iv_50 = 1.0
     iv_multiplier = iv_curr / avg_iv_50
 
+    # Version-based Parameter Calibration (A/B testing parallel execution)
+    is_v25 = (version == "v2.5")
+    
+    # 1. Baseline Dynamic Threshold (Approved: 70 -> 60)
+    baseline_threshold = 60.0
+    
+    # 2. Sensitivity Denominators
+    vwap_denom = 0.75 if is_v25 else 1.5
+    ema_denom = 0.0005 if is_v25 else 0.001
+    price_denom = 0.0005 if is_v25 else 0.001
+    pcr_denom = 0.05 if is_v25 else 0.10
+    oi_denom_factor = 1.5 if is_v25 else 2.0
+    greeks_denom = 0.05 if is_v25 else 0.10
+
     # Dynamic Volatility-Adjusted Threshold (ATR + IV)
     vol_factor = (vol_multiplier - 1.0) * 5.0 + (iv_multiplier - 1.0) * 5.0
-    dynamic_threshold = 70.0 + min(15.0, max(-10.0, vol_factor))
+    dynamic_threshold = baseline_threshold + min(15.0, max(-10.0, vol_factor))
 
     # Rolling OI changes
     curr_total_oi = sum((s.call_oi + s.put_oi) for s in strikes)
@@ -205,18 +222,18 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
     bullish_reasons["Market State"] = {"raw": market_state, "normalized": bull_state_class * strength_mult, "weight": 15, "contribution": round(bull_r1, 2)}
     bearish_reasons["Market State"] = {"raw": market_state, "normalized": bear_state_class * strength_mult, "weight": 15, "contribution": round(bear_r1, 2)}
 
-    # Rule 2: VWAP Distance (ATR-Scaled) (Max 15 pts) - Calibrated to 1.5 ATR
+    # Rule 2: VWAP Distance (ATR-Scaled) (Max 15 pts) - Calibrated dynamically
     vwap_dist = current_spot - vwap
     dist_in_atr = abs(vwap_dist) / atr_curr if atr_curr > 0 else 0.0
-    norm_dist = min(1.0, dist_in_atr / 1.5)
+    norm_dist = min(1.0, dist_in_atr / vwap_denom)
     bull_r2 = norm_dist * 15.0 if vwap_dist > 0 else 0.0
     bear_r2 = norm_dist * 15.0 if vwap_dist < 0 else 0.0
     bullish_reasons["VWAP Distance"] = {"raw": round(vwap_dist, 2), "normalized": norm_dist if vwap_dist > 0 else 0.0, "weight": 15, "contribution": round(bull_r2, 2)}
     bearish_reasons["VWAP Distance"] = {"raw": round(vwap_dist, 2), "normalized": norm_dist if vwap_dist < 0 else 0.0, "weight": 15, "contribution": round(bear_r2, 2)}
 
-    # Rule 3: EMA Trends & Crosses (Max 15 pts) - Calibrated to 0.1% EMA20 diff
+    # Rule 3: EMA Trends & Crosses (Max 15 pts) - Calibrated dynamically
     ema20_dist = (current_spot - ema20) / ema20 if ema20 > 0 else 0.0
-    norm_ema20_dist = min(1.0, abs(ema20_dist) / 0.001)
+    norm_ema20_dist = min(1.0, abs(ema20_dist) / ema_denom)
     bull_ema20_pts = norm_ema20_dist * 5.0 if ema20_dist > 0 else 0.0
     bear_ema20_pts = norm_ema20_dist * 5.0 if ema20_dist < 0 else 0.0
     bull_ema_cross = 10.0 if ema20 > ema50 else 0.0
@@ -226,8 +243,8 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
     bullish_reasons["EMA Trends"] = {"raw": f"spot_ema20_diff={round(current_spot - ema20, 2)}, ema20_gt_ema50={ema20 > ema50}", "normalized": (bull_ema20_pts/5.0 * 0.33 + bull_ema_cross/10.0 * 0.67), "weight": 15, "contribution": round(bull_r3, 2)}
     bearish_reasons["EMA Trends"] = {"raw": f"spot_ema20_diff={round(current_spot - ema20, 2)}, ema20_lt_ema50={ema20 < ema50}", "normalized": (bear_ema20_pts/5.0 * 0.33 + bear_ema_cross/10.0 * 0.67), "weight": 15, "contribution": round(bear_r3, 2)}
 
-    # Rule 4: OI Change (Rolling Percentile) (Max 15 pts)
-    norm_oi = min(1.0, delta_oi / (2.0 * avg_change_oi)) if delta_oi > 0 else 0.0
+    # Rule 4: OI Change (Rolling Percentile) (Max 15 pts) - Calibrated dynamically
+    norm_oi = min(1.0, delta_oi / (oi_denom_factor * avg_change_oi)) if delta_oi > 0 else 0.0
     bull_r4 = norm_oi * 15.0 if delta_oi > 0 else 0.0
     bear_r4 = norm_oi * 15.0 if delta_oi > 0 else 0.0
     bullish_reasons["OI Change"] = {"raw": f"delta_oi={round(delta_oi*100, 3)}%, accel={round(oi_acceleration*100, 3)}%", "normalized": norm_oi if delta_oi > 0 else 0.0, "weight": 15, "contribution": round(bull_r4, 2)}
@@ -252,16 +269,16 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         if prev_analytics:
             pcr_prev = prev_analytics.pcr
     delta_pcr = pcr - pcr_prev
-    norm_pcr = min(1.0, abs(delta_pcr) / 0.1)
+    norm_pcr = min(1.0, abs(delta_pcr) / pcr_denom)
     bull_r6 = norm_pcr * 10.0 if delta_pcr > 0 else 0.0
     bear_r6 = norm_pcr * 10.0 if delta_pcr < 0 else 0.0
     bullish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr > 0 else 0.0, "weight": 10, "contribution": round(bull_r6, 2)}
     bearish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr < 0 else 0.0, "weight": 10, "contribution": round(bear_r6, 2)}
 
-    # Rule 7: Price Momentum (Max 10 pts) - Calibrated to 0.1%
+    # Rule 7: Price Momentum (Max 10 pts) - Calibrated dynamically
     spot_prev = prev_snapshots[0].spot_price if prev_snapshots else current_spot
     delta_spot = (current_spot - spot_prev) / spot_prev if spot_prev > 0 else 0.0
-    norm_spot = min(1.0, abs(delta_spot) / 0.001)
+    norm_spot = min(1.0, abs(delta_spot) / price_denom)
     bull_r7 = norm_spot * 10.0 if delta_spot > 0 else 0.0
     bear_r7 = norm_spot * 10.0 if delta_spot < 0 else 0.0
     bullish_reasons["Price Momentum"] = {"raw": f"{round(delta_spot*100, 3)}%", "normalized": norm_spot if delta_spot > 0 else 0.0, "weight": 10, "contribution": round(bull_r7, 2)}
@@ -269,7 +286,7 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
 
     # Rule 8: Option Greeks (Max 10 pts) & Compiled Scores
     if greeks_available:
-        norm_greeks = min(1.0, abs(net_delta) / 0.10)
+        norm_greeks = min(1.0, abs(net_delta) / greeks_denom)
         bull_r8 = norm_greeks * 10.0 if net_delta > 0 else 0.0
         bear_r8 = norm_greeks * 10.0 if net_delta < 0 else 0.0
         bullish_reasons["Greeks"] = {"raw": f"net_delta={round(net_delta, 3)}, net_gamma={round(net_gamma, 5)}", "normalized": norm_greeks if net_delta > 0 else 0.0, "weight": 10, "contribution": round(bull_r8, 2)}
@@ -291,25 +308,25 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
     decision_margin = round(abs(bullish_score - bearish_score), 2)
     confidence_ratio = round((max(bullish_score, bearish_score) / (bullish_score + bearish_score) * 100), 2) if (bullish_score + bearish_score) > 0.0 else 0.0
 
-    # Fetch previous signals for persistence - filtered by expiry_date!
+    # Fetch previous signals for persistence - filtered by expiry_date & version!
     prev_signals = db.query(TradingSignal).filter(
         TradingSignal.symbol == snapshot.symbol,
         TradingSignal.expiry_date == snapshot.expiry_date,
-        TradingSignal.signal_version == "v2",
+        TradingSignal.signal_version == version,
         TradingSignal.snapshot_id < snapshot_id
-    ).order_by(TradingSignal.snapshot_id.desc()).limit(2).all()
+    ).order_by(TradingSignal.snapshot_id.desc()).limit(1).all()
 
     prev_bullish = [s.bullish_score for s in prev_signals if s.bullish_score is not None]
     prev_bearish = [s.bearish_score for s in prev_signals if s.bearish_score is not None]
 
-    # 3-Minute score rolling average persistence filter
-    bull_3m_avg = round((bullish_score + sum(prev_bullish)) / (1 + len(prev_bullish)), 2)
-    bear_3m_avg = round((bearish_score + sum(prev_bearish)) / (1 + len(prev_bearish)), 2)
+    # 2-Minute score rolling average persistence filter (current + 1 previous snapshot)
+    bull_2m_avg = round((bullish_score + sum(prev_bullish)) / (1 + len(prev_bullish)), 2)
+    bear_2m_avg = round((bearish_score + sum(prev_bearish)) / (1 + len(prev_bearish)), 2)
 
     # Determine final published signal
-    if bull_3m_avg >= dynamic_threshold:
+    if bull_2m_avg >= dynamic_threshold:
         signal_type = "BUY_CALL"
-    elif bear_3m_avg >= dynamic_threshold:
+    elif bear_2m_avg >= dynamic_threshold:
         signal_type = "BUY_PUT"
     else:
         signal_type = "NO_TRADE"
@@ -366,7 +383,7 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
             closest_failed_rule = name_mapping.get(raw_rule_name, raw_rule_name)
 
     # Explainability output JSON mapping rules and actual values
-    reasons_v2 = bullish_reasons if bull_3m_avg >= bear_3m_avg else bearish_reasons
+    reasons_v2 = bullish_reasons if bull_2m_avg >= bear_2m_avg else bearish_reasons
     
     # Feature Importance (Top Contributors)
     contribs = [{"rule": k, "contribution_pct": round(v["contribution"], 2)} for k, v in reasons_v2.items()]
@@ -445,7 +462,7 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         reasons=json.dumps(reasons_v2),
         signal_inputs=json.dumps(signal_inputs_dict),
         market_state=market_state,
-        signal_version="v2",
+        signal_version=version,
         was_executed=False,
         status="PENDING",
         

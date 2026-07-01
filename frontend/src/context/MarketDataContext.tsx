@@ -47,6 +47,8 @@ interface MarketDataContextType {
   signalsLoading: boolean;
   signalsError: string | null;
   executeSignal: (signalId: number) => Promise<boolean>;
+  signalVersion: string;
+  setSignalVersion: (v: string) => void;
   
   // General status
   isRefreshing: boolean;
@@ -107,6 +109,7 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
   const [signalsHistory, setSignalsHistory] = useState<any[]>([]);
   const [signalsLoading, setSignalsLoading] = useState(true);
   const [signalsError, setSignalsError] = useState<string | null>(null);
+  const [signalVersion, setSignalVersion] = useState<string>("v2");
   
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -228,10 +231,10 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const fetchLatestSignal = useCallback(async (sym: string, date: string | null, isSilent = false) => {
+  const fetchLatestSignal = useCallback(async (sym: string, date: string | null, version: string = "v2", isSilent = false) => {
     if (!isSilent) setSignalsLoading(true);
     try {
-      let url = `${BACKEND_URL}/api/signals/latest?symbol=${sym}`;
+      let url = `${BACKEND_URL}/api/signals/latest?symbol=${sym}&version=${version}`;
       if (date) url += `&date=${date}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch latest signal");
@@ -245,9 +248,9 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const fetchSignalsStats = useCallback(async (sym: string, isSilent = false) => {
+  const fetchSignalsStats = useCallback(async (sym: string, version: string = "v2", isSilent = false) => {
     try {
-      const url = `${BACKEND_URL}/api/signals/stats?symbol=${sym}`;
+      const url = `${BACKEND_URL}/api/signals/stats?symbol=${sym}&version=${version}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch signals stats");
       const d = await res.json();
@@ -257,9 +260,9 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const fetchSignalsHistory = useCallback(async (sym: string, date: string | null, isSilent = false) => {
+  const fetchSignalsHistory = useCallback(async (sym: string, date: string | null, version: string = "v2", isSilent = false) => {
     try {
-      let url = `${BACKEND_URL}/api/signals/history?symbol=${sym}`;
+      let url = `${BACKEND_URL}/api/signals/history?symbol=${sym}&version=${version}`;
       if (date) url += `&date=${date}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch signals history");
@@ -288,7 +291,7 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const fetchAll = useCallback(async (sym: string, expiry: string | null, date: string | null, isSilent = false) => {
+  const fetchAll = useCallback(async (sym: string, expiry: string | null, date: string | null, version: string = "v2", isSilent = false) => {
     if (isSilent) {
       setIsRefreshing(true);
     }
@@ -298,9 +301,9 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
       fetchInsights(sym, expiry, date, isSilent),
       fetchQuant(sym, expiry, date, isSilent),
       fetchTrends(sym, expiry, date, isSilent),
-      fetchLatestSignal(sym, date, isSilent),
-      fetchSignalsStats(sym, isSilent),
-      fetchSignalsHistory(sym, date, isSilent)
+      fetchLatestSignal(sym, date, version, isSilent),
+      fetchSignalsStats(sym, version, isSilent),
+      fetchSignalsHistory(sym, date, version, isSilent)
     ]);
     
     const chainSuccess = results[0];
@@ -313,9 +316,9 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
 
   const refreshAll = useCallback(async () => {
     setIsRefreshing(true);
-    await fetchAll(symbol, selectedExpiry, selectedDate, true);
+    await fetchAll(symbol, selectedExpiry, selectedDate, signalVersion, true);
     setIsRefreshing(false);
-  }, [symbol, selectedExpiry, selectedDate, fetchAll]);
+  }, [symbol, selectedExpiry, selectedDate, signalVersion, fetchAll]);
 
   // Step 1: On symbol change, load dates first, then default to the latest date
   useEffect(() => {
@@ -357,7 +360,7 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
           setSelectedExpiry(expiries[0]);
         } else {
           // If the expiry is still valid, trigger full fetch
-          fetchAll(symbol, selectedExpiry, selectedDate, false);
+          fetchAll(symbol, selectedExpiry, selectedDate, signalVersion, false);
         }
       } else {
         setSelectedExpiry(null);
@@ -369,25 +372,34 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
       }
     }
     loadExpiries();
-  }, [selectedDate, symbol, fetchExpiries]);
+  }, [selectedDate, symbol, fetchExpiries, signalVersion]);
 
   // Step 3: On expiry change, trigger full fetch
   useEffect(() => {
     if (selectedExpiry && selectedDate) {
-      fetchAll(symbol, selectedExpiry, selectedDate, false);
+      fetchAll(symbol, selectedExpiry, selectedDate, signalVersion, false);
     }
-  }, [selectedExpiry, selectedDate, symbol, fetchAll]);
+  }, [selectedExpiry, selectedDate, symbol, signalVersion, fetchAll]);
 
   // Step 4: 5-minute background refresh (only during market hours)
   useEffect(() => {
     const t = setInterval(() => {
       if (isISTMarketOpen()) {
-        fetchAll(symbol, selectedExpiry, selectedDate, true);
+        fetchAll(symbol, selectedExpiry, selectedDate, signalVersion, true);
       }
     }, 300000);
     
     return () => clearInterval(t);
-  }, [symbol, selectedExpiry, selectedDate, fetchAll]);
+  }, [symbol, selectedExpiry, selectedDate, signalVersion, fetchAll]);
+
+  // Step 5: On signal version change, reload signals immediately
+  useEffect(() => {
+    if (symbol && selectedDate) {
+      fetchLatestSignal(symbol, selectedDate, signalVersion, false);
+      fetchSignalsStats(symbol, signalVersion, false);
+      fetchSignalsHistory(symbol, selectedDate, signalVersion, false);
+    }
+  }, [signalVersion, symbol, selectedDate, fetchLatestSignal, fetchSignalsStats, fetchSignalsHistory]);
 
   return (
     <MarketDataContext.Provider
@@ -423,7 +435,9 @@ export function MarketDataProvider({ children }: { children: React.ReactNode }) 
         isRefreshing,
         lastSync,
         connected,
-        refreshAll
+        refreshAll,
+        signalVersion,
+        setSignalVersion
       }}
     >
       {children}

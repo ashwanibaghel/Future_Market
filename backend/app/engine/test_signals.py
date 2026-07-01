@@ -183,6 +183,41 @@ class TestSignalEngine(unittest.TestCase):
         self.assertEqual(signal.expected_strength, "Weak Setup")
         self.assertEqual(signal.closest_failed_rule, "Market State Regime")
 
+    def test_generate_trading_signal_v25_calibrated_bullish(self):
+        now = datetime.utcnow()
+        snap = OptionChainSnapshot(
+            timestamp=now,
+            symbol="NIFTY",
+            expiry_date="2026-06-25",
+            spot_price=25020.0,
+            collection_status="SUCCESS"
+        )
+        self.db.add(snap)
+        self.db.commit()
+
+        curr_strike = OptionChainStrike(
+            snapshot_id=snap.id, strike=25000.0, call_volume=100, put_volume=100, call_oi=100, put_oi=100,
+            call_delta=0.0, put_delta=0.0
+        )
+        self.db.add(curr_strike)
+        
+        curr_analytics = AnalyticsSnapshot(
+            source_snapshot_id=snap.id,
+            pcr=1.1,
+            market_state="LONG BUILD-UP",
+            strength="HIGH"
+        )
+        self.db.add(curr_analytics)
+        self.db.commit()
+
+        sig_v2 = generate_trading_signal(self.db, snap.id, version="v2")
+        sig_v25 = generate_trading_signal(self.db, snap.id, version="v2.5")
+
+        self.assertIsNotNone(sig_v2)
+        self.assertIsNotNone(sig_v25)
+        self.assertEqual(sig_v2.signal_version, "v2")
+        self.assertEqual(sig_v25.signal_version, "v2.5")
+
     def test_sensex_signal_is_skipped(self):
         now = datetime.utcnow()
         snap = OptionChainSnapshot(
