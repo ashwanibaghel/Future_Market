@@ -413,6 +413,8 @@ class TradingSignal(Base):
     data_quality_score = Column(Integer, default=100)
     top_contributors = Column(Text, nullable=True)  # JSON serialized list of top contributors
     lifecycle_state = Column(String(20), default="CREATED")  # CREATED, STRENGTHENED, WEAKENED, CANCELLED, EXECUTED
+    expected_strength = Column(String(30), nullable=True)     # Weak Setup, Developing Setup, Almost Ready, Strong Signal, Exceptional Setup
+    closest_failed_rule = Column(String(50), nullable=True)   # Name of rule that failed, e.g. "VWAP Confirmation"
     
     # Excursion & evaluation parameters
     spot_after_15m = Column(Float, nullable=True)

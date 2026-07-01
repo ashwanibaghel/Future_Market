@@ -58,12 +58,14 @@ def get_latest_signal(symbol: str = Query(..., description="Symbol (e.g. NIFTY, 
                 "strength": "LOW"
             }),
             "market_state": "NEUTRAL",
-            "signal_version": "v1",
+            "signal_version": "v2",
             "was_executed": False,
             "outcome_15m": "PENDING",
             "outcome_30m": "PENDING",
             "outcome_60m": "PENDING",
-            "status": "PENDING"
+            "status": "PENDING",
+            "expected_strength": "Weak Setup",
+            "closest_failed_rule": None
         }
     return latest_signal
 

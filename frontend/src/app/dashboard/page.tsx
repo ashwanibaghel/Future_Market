@@ -409,6 +409,17 @@ export default function DashboardPage() {
                                 ? Math.round((latestSignal.matched_conditions / latestSignal.total_conditions) * 100)
                                 : 0);
 
+                            const gaugeValue = isNoTrade && isV2 ? Math.round(latestSignal.matched_conditions || 0) : confidencePct;
+
+                            const strengthColors: Record<string, string> = {
+                              "Exceptional Setup": "bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse shadow-md shadow-amber-500/5",
+                              "Strong Signal": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                              "Almost Ready": "bg-indigo-500/10 text-indigo-400 border-indigo-500/20 animate-pulse",
+                              "Developing Setup": "bg-slate-800/60 text-slate-400 border-[#1e2433]",
+                              "Weak Setup": "bg-slate-900/60 text-slate-500 border-white/5"
+                            };
+                            const strengthClass = strengthColors[latestSignal.expected_strength || ""] || "bg-slate-800/60 text-slate-400 border-[#1e2433]";
+
                             // Parse reasons object
                             let reasonsObj: Record<string, any> = {};
                             try {
@@ -433,7 +444,7 @@ export default function DashboardPage() {
                                     <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                       Decision Output
                                     </span>
-                                    <div className="flex items-center gap-3 mt-1.5">
+                                    <div className="flex items-center flex-wrap gap-2.5 mt-1.5">
                                       <div className={`px-3 py-1 rounded-xl text-lg font-black border tracking-wider ${badgeStyles}`}>
                                         {sigType.replace("_", " ")}
                                       </div>
@@ -442,10 +453,21 @@ export default function DashboardPage() {
                                           {latestSignal.suggested_strike}
                                         </div>
                                       )}
+                                      {latestSignal.expected_strength && (
+                                        <div className={`px-2.5 py-1 rounded-lg text-xs font-black border uppercase tracking-widest ${strengthClass}`}>
+                                          {latestSignal.expected_strength}
+                                        </div>
+                                      )}
                                     </div>
                                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-3">
                                       Generated At: {formatIST(latestSignal.timestamp, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })} ({symbol} Spot: ₹{latestSignal.spot_price})
                                     </div>
+                                    {isNoTrade && latestSignal.closest_failed_rule && (
+                                      <div className="text-[10px] text-rose-400/85 font-black uppercase tracking-widest mt-2 flex items-center gap-1.5 bg-rose-500/5 border border-rose-500/10 px-2.5 py-1 rounded-lg w-fit">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                        Missing Confirmation: {latestSignal.closest_failed_rule}
+                                      </div>
+                                    )}
                                   </div>
 
                                   {/* Right: Confidence Gauge */}
@@ -461,21 +483,25 @@ export default function DashboardPage() {
                                           className={`fill-none ${isBuyCall ? "stroke-emerald-400" : isBuyPut ? "stroke-rose-400" : "stroke-indigo-400"}`}
                                           strokeWidth="6"
                                           strokeDasharray={`${2 * Math.PI * 28}`}
-                                          strokeDashoffset={`${2 * Math.PI * 28 * (1 - confidencePct / 100)}`}
+                                          strokeDashoffset={`${2 * Math.PI * 28 * (1 - gaugeValue / 100)}`}
                                           strokeLinecap="round"
                                         />
                                       </svg>
                                       <span className="absolute text-xs font-black font-mono text-slate-200">
-                                        {confidencePct}%
+                                        {gaugeValue}%
                                       </span>
                                     </div>
                                     <div>
                                       <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                        {isV2 ? "Confidence Ratio" : "Rule Match"}
+                                        {isV2 
+                                          ? (isNoTrade ? "Signal Score" : "Confidence Ratio") 
+                                          : "Rule Match"}
                                       </span>
                                       <span className="text-xs font-bold text-slate-300">
                                         {isV2
-                                          ? `${confidencePct}% Bias (Margin: ${latestSignal.decision_margin || 0} pts)`
+                                          ? (isNoTrade 
+                                              ? `${latestSignal.matched_conditions || 0} / 100 pts (Score)`
+                                              : `${confidencePct}% Bias (Margin: ${latestSignal.decision_margin || 0} pts)`)
                                           : `${latestSignal.matched_conditions} of ${latestSignal.total_conditions} rules`}
                                       </span>
                                     </div>
@@ -487,7 +513,7 @@ export default function DashboardPage() {
 
                                 {/* Reasons list */}
                                 <h4 className="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">
-                                  {isV2 ? `Rule Checklist (Dynamic Threshold: ${latestSignal.dynamic_threshold || 70} pts)` : "Rule Checklist"}
+                                  {isV2 ? `Rule Checklist (Current Score: ${latestSignal.matched_conditions || 0} pts | Dynamic Threshold: ${latestSignal.dynamic_threshold || 70} pts)` : "Rule Checklist"}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                                   {isV2 ? (

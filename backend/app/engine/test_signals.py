@@ -141,15 +141,47 @@ class TestSignalEngine(unittest.TestCase):
         self.assertEqual(signal.strike_selection_reason, "ATM")
         self.assertEqual(signal.signal_version, "v2")
         self.assertGreaterEqual(signal.matched_conditions, 70)
-        self.assertEqual(signal.bullish_score, signal.matched_conditions)
+        self.assertEqual(int(round(signal.bullish_score)), signal.matched_conditions)
         self.assertGreater(signal.decision_margin, 0.0)
         self.assertEqual(signal.lifecycle_state, "CREATED")
+        self.assertEqual(signal.expected_strength, "Exceptional Setup")
+        self.assertIsNone(signal.closest_failed_rule)
         
         # Verify MarketRegime table was populated
         from app.db.models import MarketRegime
         regime = self.db.query(MarketRegime).filter(MarketRegime.symbol == "NIFTY").first()
         self.assertIsNotNone(regime)
         self.assertEqual(regime.trend, "TRENDING")
+
+    def test_generate_trading_signal_no_trade_with_failed_rule(self):
+        now = datetime.utcnow()
+        curr_snap = OptionChainSnapshot(
+            timestamp=now,
+            symbol="NIFTY",
+            expiry_date="2026-06-25",
+            spot_price=25000.0,
+            collection_status="SUCCESS"
+        )
+        self.db.add(curr_snap)
+        self.db.commit()
+
+        curr_strike = OptionChainStrike(snapshot_id=curr_snap.id, strike=25000.0, call_volume=10, put_volume=10, call_oi=10, put_oi=10)
+        self.db.add(curr_strike)
+        
+        curr_analytics = AnalyticsSnapshot(
+            source_snapshot_id=curr_snap.id,
+            pcr=1.0,
+            market_state="NEUTRAL",
+            strength="LOW"
+        )
+        self.db.add(curr_analytics)
+        self.db.commit()
+
+        signal = generate_trading_signal(self.db, curr_snap.id)
+        self.assertIsNotNone(signal)
+        self.assertEqual(signal.signal_type, "NO_TRADE")
+        self.assertEqual(signal.expected_strength, "Weak Setup")
+        self.assertEqual(signal.closest_failed_rule, "Market State Regime")
 
     def test_sensex_signal_is_skipped(self):
         now = datetime.utcnow()

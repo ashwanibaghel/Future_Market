@@ -64,6 +64,8 @@ def run_migrations():
             ("data_quality_score", "INTEGER DEFAULT 100"),
             ("top_contributors", "TEXT"),
             ("lifecycle_state", "VARCHAR(20) DEFAULT 'CREATED'"),
+            ("expected_strength", "VARCHAR(30)"),
+            ("closest_failed_rule", "VARCHAR(50)"),
         ]
         result = connection.execute(text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{signal_table}'")).fetchone()
         if result:

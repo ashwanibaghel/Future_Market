@@ -84,9 +84,10 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         MLFeatureSnapshot.timeframe == "1m"
     ).first()
 
-    # Fetch previous snapshots (up to 50) for rolling statistics
+    # Fetch previous snapshots (up to 50) for rolling statistics - filtered by expiry_date!
     prev_snapshots = db.query(OptionChainSnapshot).filter(
         OptionChainSnapshot.symbol == snapshot.symbol,
+        OptionChainSnapshot.expiry_date == snapshot.expiry_date,
         OptionChainSnapshot.collection_status == "SUCCESS",
         OptionChainSnapshot.id < snapshot_id
     ).order_by(OptionChainSnapshot.timestamp.desc()).limit(50).all()
@@ -177,11 +178,19 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         vol_std = 0.0
     volume_z_score = (curr_total_vol - vol_mean) / vol_std if vol_std > 0 else 0.0
 
-    # Greeks Bias (Delta ATM ± 2 strikes)
+    # Greeks Bias (Delta ATM strike) - using closest ATM strike to avoid symmetric cancellation
     sorted_strikes = sorted(strikes, key=lambda s: abs(s.strike - current_spot))
+    closest_strike = sorted_strikes[0] if sorted_strikes else None
     close_strikes = sorted_strikes[:5]
-    net_delta = sum((s.call_delta + s.put_delta) for s in close_strikes)
-    net_gamma = sum((s.call_gamma + s.put_gamma) for s in close_strikes)
+    
+    if closest_strike and (closest_strike.call_delta != 0.0 or closest_strike.put_delta != 0.0):
+        net_delta = closest_strike.call_delta + closest_strike.put_delta
+        net_gamma = closest_strike.call_gamma + closest_strike.put_gamma
+        greeks_available = True
+    else:
+        net_delta = 0.0
+        net_gamma = 0.0
+        greeks_available = False
 
     # --- 4. Evaluate Audited Rules (Bullish & Bearish) ---
     bullish_reasons = {}
@@ -196,18 +205,18 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
     bullish_reasons["Market State"] = {"raw": market_state, "normalized": bull_state_class * strength_mult, "weight": 15, "contribution": round(bull_r1, 2)}
     bearish_reasons["Market State"] = {"raw": market_state, "normalized": bear_state_class * strength_mult, "weight": 15, "contribution": round(bear_r1, 2)}
 
-    # Rule 2: VWAP Distance (ATR-Scaled) (Max 15 pts)
+    # Rule 2: VWAP Distance (ATR-Scaled) (Max 15 pts) - Calibrated to 1.5 ATR
     vwap_dist = current_spot - vwap
     dist_in_atr = abs(vwap_dist) / atr_curr if atr_curr > 0 else 0.0
-    norm_dist = min(1.0, dist_in_atr / 3.0)
+    norm_dist = min(1.0, dist_in_atr / 1.5)
     bull_r2 = norm_dist * 15.0 if vwap_dist > 0 else 0.0
     bear_r2 = norm_dist * 15.0 if vwap_dist < 0 else 0.0
     bullish_reasons["VWAP Distance"] = {"raw": round(vwap_dist, 2), "normalized": norm_dist if vwap_dist > 0 else 0.0, "weight": 15, "contribution": round(bull_r2, 2)}
     bearish_reasons["VWAP Distance"] = {"raw": round(vwap_dist, 2), "normalized": norm_dist if vwap_dist < 0 else 0.0, "weight": 15, "contribution": round(bear_r2, 2)}
 
-    # Rule 3: EMA Trends & Crosses (Max 15 pts)
+    # Rule 3: EMA Trends & Crosses (Max 15 pts) - Calibrated to 0.1% EMA20 diff
     ema20_dist = (current_spot - ema20) / ema20 if ema20 > 0 else 0.0
-    norm_ema20_dist = min(1.0, abs(ema20_dist) / 0.002)
+    norm_ema20_dist = min(1.0, abs(ema20_dist) / 0.001)
     bull_ema20_pts = norm_ema20_dist * 5.0 if ema20_dist > 0 else 0.0
     bear_ema20_pts = norm_ema20_dist * 5.0 if ema20_dist < 0 else 0.0
     bull_ema_cross = 10.0 if ema20 > ema50 else 0.0
@@ -249,31 +258,43 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
     bullish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr > 0 else 0.0, "weight": 10, "contribution": round(bull_r6, 2)}
     bearish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr < 0 else 0.0, "weight": 10, "contribution": round(bear_r6, 2)}
 
-    # Rule 7: Price Momentum (Max 10 pts)
+    # Rule 7: Price Momentum (Max 10 pts) - Calibrated to 0.1%
     spot_prev = prev_snapshots[0].spot_price if prev_snapshots else current_spot
     delta_spot = (current_spot - spot_prev) / spot_prev if spot_prev > 0 else 0.0
-    norm_spot = min(1.0, abs(delta_spot) / 0.002)
+    norm_spot = min(1.0, abs(delta_spot) / 0.001)
     bull_r7 = norm_spot * 10.0 if delta_spot > 0 else 0.0
     bear_r7 = norm_spot * 10.0 if delta_spot < 0 else 0.0
     bullish_reasons["Price Momentum"] = {"raw": f"{round(delta_spot*100, 3)}%", "normalized": norm_spot if delta_spot > 0 else 0.0, "weight": 10, "contribution": round(bull_r7, 2)}
     bearish_reasons["Price Momentum"] = {"raw": f"{round(delta_spot*100, 3)}%", "normalized": norm_spot if delta_spot < 0 else 0.0, "weight": 10, "contribution": round(bear_r7, 2)}
 
-    # Rule 8: Option Greeks (Max 10 pts)
-    norm_greeks = min(1.0, abs(net_delta) / 0.2)
-    bull_r8 = norm_greeks * 10.0 if net_delta > 0 else 0.0
-    bear_r8 = norm_greeks * 10.0 if net_delta < 0 else 0.0
-    bullish_reasons["Greeks"] = {"raw": f"net_delta={round(net_delta, 3)}, net_gamma={round(net_gamma, 5)}", "normalized": norm_greeks if net_delta > 0 else 0.0, "weight": 10, "contribution": round(bull_r8, 2)}
-    bearish_reasons["Greeks"] = {"raw": f"net_delta={round(net_delta, 3)}, net_gamma={round(net_gamma, 5)}", "normalized": norm_greeks if net_delta < 0 else 0.0, "weight": 10, "contribution": round(bear_r8, 2)}
+    # Rule 8: Option Greeks (Max 10 pts) & Compiled Scores
+    if greeks_available:
+        norm_greeks = min(1.0, abs(net_delta) / 0.10)
+        bull_r8 = norm_greeks * 10.0 if net_delta > 0 else 0.0
+        bear_r8 = norm_greeks * 10.0 if net_delta < 0 else 0.0
+        bullish_reasons["Greeks"] = {"raw": f"net_delta={round(net_delta, 3)}, net_gamma={round(net_gamma, 5)}", "normalized": norm_greeks if net_delta > 0 else 0.0, "weight": 10, "contribution": round(bull_r8, 2)}
+        bearish_reasons["Greeks"] = {"raw": f"net_delta={round(net_delta, 3)}, net_gamma={round(net_gamma, 5)}", "normalized": norm_greeks if net_delta < 0 else 0.0, "weight": 10, "contribution": round(bear_r8, 2)}
+
+        bullish_score = round(bull_r1 + bull_r2 + bull_r3 + bull_r4 + bull_r5 + bull_r6 + bull_r7 + bull_r8, 2)
+        bearish_score = round(bear_r1 + bear_r2 + bear_r3 + bear_r4 + bear_r5 + bear_r6 + bear_r7 + bear_r8, 2)
+    else:
+        # Exclude Greeks from calculation and scale the 90 points raw score to a 100 point scale
+        raw_bull = bull_r1 + bull_r2 + bull_r3 + bull_r4 + bull_r5 + bull_r6 + bull_r7
+        raw_bear = bear_r1 + bear_r2 + bear_r3 + bear_r4 + bear_r5 + bear_r6 + bear_r7
+        bullish_score = round((raw_bull / 90.0) * 100.0, 2)
+        bearish_score = round((raw_bear / 90.0) * 100.0, 2)
+
+        bullish_reasons["Greeks"] = {"raw": "N/A (Missing Greeks Fallback applied)", "normalized": 0.0, "weight": 0, "contribution": 0.0}
+        bearish_reasons["Greeks"] = {"raw": "N/A (Missing Greeks Fallback applied)", "normalized": 0.0, "weight": 0, "contribution": 0.0}
 
     # --- 5. Compile Final V2 Metrics ---
-    bullish_score = round(bull_r1 + bull_r2 + bull_r3 + bull_r4 + bull_r5 + bull_r6 + bull_r7 + bull_r8, 2)
-    bearish_score = round(bear_r1 + bear_r2 + bear_r3 + bear_r4 + bear_r5 + bear_r6 + bear_r7 + bear_r8, 2)
     decision_margin = round(abs(bullish_score - bearish_score), 2)
     confidence_ratio = round((max(bullish_score, bearish_score) / (bullish_score + bearish_score) * 100), 2) if (bullish_score + bearish_score) > 0.0 else 0.0
 
-    # Fetch previous signals for persistence
+    # Fetch previous signals for persistence - filtered by expiry_date!
     prev_signals = db.query(TradingSignal).filter(
         TradingSignal.symbol == snapshot.symbol,
+        TradingSignal.expiry_date == snapshot.expiry_date,
         TradingSignal.signal_version == "v2",
         TradingSignal.snapshot_id < snapshot_id
     ).order_by(TradingSignal.snapshot_id.desc()).limit(2).all()
@@ -300,6 +321,49 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         raw_signal = "BUY_PUT"
     else:
         raw_signal = "NO_TRADE"
+
+    # Expected Strength Classification (based on dynamic_threshold)
+    primary_score = bullish_score if bullish_score >= bearish_score else bearish_score
+    primary_reasons = bullish_reasons if bullish_score >= bearish_score else bearish_reasons
+
+    if signal_type in ["BUY_CALL", "BUY_PUT"]:
+        if primary_score >= 80.0:
+            expected_strength = "Exceptional Setup"
+        else:
+            expected_strength = "Strong Signal"
+    else:
+        if primary_score >= 50.0:
+            expected_strength = "Almost Ready"
+        elif primary_score >= 35.0:
+            expected_strength = "Developing Setup"
+        else:
+            expected_strength = "Weak Setup"
+
+    # Closest Failed Rule Logic
+    closest_failed_rule = None
+    if signal_type == "NO_TRADE":
+        failed_candidates = []
+        for rule_name, data in primary_reasons.items():
+            weight = data.get("weight", 0)
+            contrib = data.get("contribution", 0.0)
+            if weight > 0 and contrib < weight:
+                discrepancy = weight - contrib
+                failed_candidates.append((rule_name, discrepancy))
+        
+        if failed_candidates:
+            failed_candidates.sort(key=lambda x: x[1], reverse=True)
+            name_mapping = {
+                "Market State": "Market State Regime",
+                "VWAP Distance": "VWAP Confirmation",
+                "EMA Trends": "EMA Trend Confirmation",
+                "OI Change": "OI Accumulation",
+                "Options Volume": "Options Volume Bias",
+                "PCR Trend": "PCR Trend Bias",
+                "Price Momentum": "Price Momentum",
+                "Greeks": "Greeks Bias"
+            }
+            raw_rule_name = failed_candidates[0][0]
+            closest_failed_rule = name_mapping.get(raw_rule_name, raw_rule_name)
 
     # Explainability output JSON mapping rules and actual values
     reasons_v2 = bullish_reasons if bull_3m_avg >= bear_3m_avg else bearish_reasons
@@ -396,7 +460,9 @@ def generate_trading_signal(db: Session, snapshot_id: int) -> TradingSignal:
         feature_version="v2.0",
         data_quality_score=data_quality_score,
         top_contributors=json.dumps(top_contribs),
-        lifecycle_state=lifecycle_state
+        lifecycle_state=lifecycle_state,
+        expected_strength=expected_strength,
+        closest_failed_rule=closest_failed_rule
     )
 
     db.add(trading_signal)
