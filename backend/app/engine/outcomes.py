@@ -495,40 +495,48 @@ def evaluate_trading_signals(db: Session):
 
 def backfill_trading_signals(db: Session):
     """
-    Startup scan to create and evaluate TradingSignal records for all existing historical snapshots.
+    Startup scan to create and evaluate both supported signal versions for all
+    existing historical snapshots. Version-specific watermarks allow a newly
+    introduced version to repair historical A/B coverage without replaying
+    versions that are already current.
     """
     logger.info("Starting retrospective backfill of trading signals...")
     from app.db.models import TradingSignal, OptionChainSnapshot
-    from app.engine.signals import generate_trading_signal
-    
-    # Retrieve last successful backfill snapshot ID watermark for signals
-    last_id_str = get_metadata(db, "last_backfilled_signal_snapshot_id", "0")
-    try:
-        last_id = int(last_id_str)
-    except ValueError:
-        last_id = 0
+    from app.engine.signals import SIGNAL_VERSION_METADATA, generate_trading_signal
 
     batch_size = 500
     created_count = 0
-    
-    while True:
-        snapshots = db.query(OptionChainSnapshot).filter(
-            OptionChainSnapshot.collection_status == "SUCCESS",
-            OptionChainSnapshot.id > last_id
-        ).order_by(OptionChainSnapshot.id.asc()).limit(batch_size).all()
-        
-        if not snapshots:
-            break
-            
-        for snap in snapshots:
-            sig = generate_trading_signal(db, snap.id)
-            if sig:
-                created_count += 1
-            last_id = snap.id
-            
-        db.commit()
-        set_metadata(db, "last_backfilled_signal_snapshot_id", str(last_id))
-        
+
+    for version in SIGNAL_VERSION_METADATA:
+        watermark_key = f"last_backfilled_signal_snapshot_id_{version.replace('.', '_')}"
+        last_id_str = get_metadata(db, watermark_key, "0")
+        try:
+            last_id = int(last_id_str)
+        except ValueError:
+            last_id = 0
+
+        while True:
+            snapshots = db.query(OptionChainSnapshot).filter(
+                OptionChainSnapshot.collection_status == "SUCCESS",
+                OptionChainSnapshot.id > last_id
+            ).order_by(OptionChainSnapshot.id.asc()).limit(batch_size).all()
+
+            if not snapshots:
+                break
+
+            for snap in snapshots:
+                existed = db.query(TradingSignal.id).filter(
+                    TradingSignal.snapshot_id == snap.id,
+                    TradingSignal.signal_version == version
+                ).first()
+                signal = generate_trading_signal(db, snap.id, version=version)
+                if signal and not existed:
+                    created_count += 1
+                last_id = snap.id
+
+            db.commit()
+            set_metadata(db, watermark_key, str(last_id))
+
     logger.info(f"Trading signals backfill complete. Created {created_count} trading signals.")
     
     # Evaluate outcomes of all trading signals
@@ -713,4 +721,3 @@ def evaluate_observation_logs(db: Session):
             
     db.commit()
     logger.info(f"Synchronized/Evaluated {updated_count} observation logs.")
-

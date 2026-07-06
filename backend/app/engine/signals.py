@@ -1,7 +1,7 @@
 import logging
 import json
 import math
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.models import (
@@ -10,11 +10,60 @@ from app.db.models import (
     AnalyticsSnapshot,
     MLFeatureSnapshot,
     TradingSignal,
-    MarketRegime,
-    TradeSession
+    MarketRegime
 )
 
 logger = logging.getLogger(__name__)
+
+SIGNAL_VERSION_METADATA = {
+    "v2": {"feature_version": "v2.0", "dataset_version": "v2.0"},
+    "v2.5": {"feature_version": "v2.5", "dataset_version": "v2.5"},
+}
+IST_OFFSET = timedelta(hours=5, minutes=30)
+
+
+def get_signal_version_metadata(version: str) -> dict:
+    try:
+        return SIGNAL_VERSION_METADATA[version]
+    except KeyError as exc:
+        supported = ", ".join(SIGNAL_VERSION_METADATA)
+        raise ValueError(f"Unsupported signal version '{version}'. Expected one of: {supported}") from exc
+
+
+def score_options_volume_pcr(pcr_volume: float) -> tuple[float, float]:
+    """Return bullish and bearish points using directional traded-volume PCR."""
+    bullish = 10.0 if pcr_volume < 0.6 else (5.0 if pcr_volume < 0.8 else (3.0 if pcr_volume < 1.0 else 0.0))
+    bearish = 10.0 if pcr_volume > 1.5 else (5.0 if pcr_volume > 1.2 else (3.0 if pcr_volume > 1.0 else 0.0))
+    return bullish, bearish
+
+
+def score_pcr_trend(delta_pcr: float, denominator: float) -> tuple[float, float, float]:
+    """Return bullish, bearish and normalized points for the approved PCR direction."""
+    normalized = min(1.0, abs(delta_pcr) / denominator) if denominator > 0 else 0.0
+    bullish = normalized * 10.0 if delta_pcr < 0 else 0.0
+    bearish = normalized * 10.0 if delta_pcr > 0 else 0.0
+    return bullish, bearish, normalized
+
+
+def classify_market_session(snapshot_timestamp: datetime) -> str:
+    ist_time = (snapshot_timestamp + IST_OFFSET).time()
+    if ist_time < time(10, 0):
+        return "Opening"
+    if ist_time < time(12, 0):
+        return "Morning Trend"
+    if ist_time < time(14, 0):
+        return "Lunch"
+    return "Closing"
+
+
+def parse_expiry_date(expiry_date: str):
+    for date_format in ("%d-%b-%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(expiry_date, date_format).date()
+        except ValueError:
+            continue
+    return None
+
 
 def calculate_daily_options_vwap(db: Session, symbol: str, snapshot_timestamp: datetime) -> float:
     """
@@ -51,6 +100,8 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
     Evaluates institutional-grade rule-based signals (v2 weighted scoring) for a snapshot.
     Saves and returns the TradingSignal record, skipping SENSEX when no strikes are present.
     """
+    version_metadata = get_signal_version_metadata(version)
+
     # 1. Fetch snapshot
     snapshot = db.query(OptionChainSnapshot).filter(OptionChainSnapshot.id == snapshot_id).first()
     if not snapshot:
@@ -254,8 +305,7 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
     call_vol = sum(s.call_volume for s in strikes)
     put_vol = sum(s.put_volume for s in strikes)
     pcr_vol = put_vol / call_vol if call_vol > 0 else 1.0
-    bull_pcr_vol_pts = 10.0 if pcr_vol < 0.6 else (5.0 if pcr_vol < 0.8 else (3.0 if pcr_vol < 1.0 else 0.0))
-    bear_pcr_vol_pts = 10.0 if pcr_vol > 1.5 else (5.0 if pcr_vol > 1.2 else (3.0 if pcr_vol > 1.0 else 0.0))
+    bull_pcr_vol_pts, bear_pcr_vol_pts = score_options_volume_pcr(pcr_vol)
     vol_spike_pts = 5.0 if volume_z_score > 2.0 else (3.0 if volume_z_score > 1.0 else 0.0)
     bull_r5 = bull_pcr_vol_pts + vol_spike_pts
     bear_r5 = bear_pcr_vol_pts + vol_spike_pts
@@ -269,9 +319,7 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
         if prev_analytics:
             pcr_prev = prev_analytics.pcr
     delta_pcr = pcr - pcr_prev
-    norm_pcr = min(1.0, abs(delta_pcr) / pcr_denom)
-    bull_r6 = norm_pcr * 10.0 if delta_pcr < 0 else 0.0
-    bear_r6 = norm_pcr * 10.0 if delta_pcr > 0 else 0.0
+    bull_r6, bear_r6, norm_pcr = score_pcr_trend(delta_pcr, pcr_denom)
     bullish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr < 0 else 0.0, "weight": 10, "contribution": round(bull_r6, 2)}
     bearish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr > 0 else 0.0, "weight": 10, "contribution": round(bear_r6, 2)}
 
@@ -368,7 +416,7 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
                 failed_candidates.append((rule_name, discrepancy))
         
         if failed_candidates:
-            failed_candidates.sort(key=lambda x: x[1], reverse=True)
+            failed_candidates.sort(key=lambda x: x[1])
             name_mapping = {
                 "Market State": "Market State Regime",
                 "VWAP Distance": "VWAP Confirmation",
@@ -444,46 +492,33 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
         atm_call_oi = float(closest_strike.call_oi or 0.0)
         atm_put_oi = float(closest_strike.put_oi or 0.0)
 
-    # Market Session
-    from datetime import time, datetime, timedelta
-    t = snapshot.timestamp.time()
-    if t < time(10, 0):
-        market_session = "Opening"
-    elif t < time(12, 0):
-        market_session = "Morning Trend"
-    elif t < time(14, 0):
-        market_session = "Lunch"
-    else:
-        market_session = "Closing"
+    # Snapshot timestamps are stored as naive UTC values.
+    market_session = classify_market_session(snapshot.timestamp)
 
     # Days to Expiry and weekly/monthly properties
     days_to_expiry = 0
     is_weekly_expiry = True
     is_monthly_expiry = False
     is_expiry_day = False
-    try:
-        exp_dt = datetime.strptime(snapshot.expiry_date, "%Y-%m-%d").date()
+    exp_dt = parse_expiry_date(snapshot.expiry_date)
+    if exp_dt:
         days_to_expiry = (exp_dt - snapshot.timestamp.date()).days
         is_expiry_day = (days_to_expiry == 0)
         is_monthly_expiry = (exp_dt.month != (exp_dt + timedelta(days=7)).month)
         is_weekly_expiry = not is_monthly_expiry
+
+    # Pattern knowledge is owned by the independent research Pattern Engine.
+    pattern_observation = None
+    try:
+        from app.engine.patterns import capture_pattern_observation
+        pattern_observation = capture_pattern_observation(db, snapshot.id, timeframe="1m")
     except Exception:
-        pass
-
-    # Regime Duration (Snapshots)
-    regime_duration = 1
-    for ps in prev_snapshots:
-        p_analytics = db.query(AnalyticsSnapshot).filter(AnalyticsSnapshot.source_snapshot_id == ps.id).first()
-        if p_analytics and p_analytics.market_state == market_state:
-            regime_duration += 1
-        else:
-            break
-
-    # Pattern ID (Auto-hashing format)
-    trend_state = "TrendUp" if current_spot > ema20 else ("TrendDown" if current_spot < ema20 else "TrendFlat")
-    oi_state = "OIUp" if delta_oi > 0 else "OIDown"
-    pcr_state = "PCRUp" if delta_pcr > 0 else "PCRDown"
-    pattern_id = f"{trend_state}_{oi_state}_{pcr_state}"
+        logger.exception(
+            "Pattern context unavailable for snapshot %s; signal scoring will continue",
+            snapshot.id,
+        )
+    pattern_id = pattern_observation.pattern_id if pattern_observation else "UNCLASSIFIED"
+    regime_duration = pattern_observation.pattern_age_snapshots if pattern_observation else 1
 
     # Market Phase (Derived)
     if current_spot > ema20 and ema20 > ema50 and current_spot > vwap:
@@ -533,9 +568,11 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
             "closest_failed_rule": closest_failed_rule or "None",
             "rule_contributions": reasons_v2,
             "pattern_id": pattern_id,
+            "pattern_version": pattern_observation.pattern_version if pattern_observation else None,
+            "pattern_confidence": pattern_observation.pattern_confidence if pattern_observation else 0.0,
             "market_phase": market_phase,
             "regime_duration_snapshots": regime_duration,
-            "dataset_version": "v2.5",
+            "dataset_version": version_metadata["dataset_version"],
             "shap_importance": {
                 "Market State": 0.0,
                 "VWAP Distance": 0.0,
@@ -587,7 +624,7 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
         dynamic_threshold=round(dynamic_threshold, 2),
         raw_signal=raw_signal,
         volume_z_score=volume_z_score,
-        feature_version="v2.5",
+        feature_version=version_metadata["feature_version"],
         data_quality_score=data_quality_score,
         top_contributors=json.dumps(top_contribs),
         lifecycle_state=lifecycle_state,
@@ -599,7 +636,10 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
     db.commit()
     db.refresh(trading_signal)
 
-    logger.info(f"Generated V2 TradingSignal ID {trading_signal.id} ({signal_type}) for {snapshot.symbol} at {snapshot.timestamp}")
+    logger.info(
+        f"Generated {version} TradingSignal ID {trading_signal.id} "
+        f"({signal_type}) for {snapshot.symbol} at {snapshot.timestamp}"
+    )
 
     # Create ObservationLog entry for active signals
     if signal_type in ["BUY_CALL", "BUY_PUT"]:

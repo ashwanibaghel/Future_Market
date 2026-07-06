@@ -37,12 +37,14 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
     """
     logger.info(f"Running background fetch and save for {symbol}...")
     try:
+        fetch_started_at = datetime.utcnow()
         provider_name = settings.ACTIVE_PROVIDER
         if symbol == "SENSEX" and settings.UPSTOX_ACCESS_TOKEN and settings.UPSTOX_ACCESS_TOKEN != "YOUR_PASTED_ACCESS_TOKEN_HERE":
             provider_name = "UPSTOX"
             
         provider = get_provider(provider_name)
         results = await provider.fetch_option_chain(symbol)
+        fetch_duration_ms = int((datetime.utcnow() - fetch_started_at).total_seconds() * 1000)
         
         if not results:
             logger.warning(f"No option chain results parsed for {symbol}.")
@@ -61,7 +63,6 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
         # 2. Process each expiry date snapshot
         cycle_timestamp = datetime.utcnow()
         for result in results:
-            start_time = datetime.utcnow()
             snapshot = OptionChainSnapshot(
                 timestamp=cycle_timestamp,
                 symbol=result['symbol'],
@@ -70,16 +71,11 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
                 spot_price=result['spot_price'],
                 provider=provider_name,
                 collection_status="SUCCESS",
-                collection_duration_ms=0
+                collection_duration_ms=fetch_duration_ms
             )
             db.add(snapshot)
             db.commit()
             db.refresh(snapshot)
-            
-            # Update duration
-            duration = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            snapshot.collection_duration_ms = duration
-            db.commit()
             
             # 3. Save Strikes in Bulk
             strikes_to_save = []
@@ -121,7 +117,17 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
                 generate_analytics_snapshot(db, snapshot.id)
                 logger.info(f"Successfully generated analytics snapshot for {symbol} expiry {result['expiry_date']} (Snapshot ID: {snapshot.id}).")
                 # Capture ML features for timeframe 1m
-                capture_ml_features(db, snapshot.id, timeframe="1m")
+                features_captured = capture_ml_features(db, snapshot.id, timeframe="1m")
+
+                if features_captured:
+                    try:
+                        from app.engine.patterns import capture_pattern_observation
+                        capture_pattern_observation(db, snapshot.id, timeframe="1m")
+                    except Exception:
+                        logger.exception(
+                            "Pattern capture failed for snapshot %s; continuing signal generation",
+                            snapshot.id,
+                        )
                 
                 # Generate Trading Signals (V2 and V2.5 parallel A/B test)
                 from app.engine.signals import generate_trading_signal
@@ -237,13 +243,15 @@ def run_sync_observation_logs_evaluation():
 
 def run_startup_backfill():
     """
-    On startup, creates InsightOutcome and TradingSignal records for all historical snapshots and evaluates them.
+    On startup, repairs research patterns, outcomes, and trading signals for historical snapshots.
     Runs once in a background thread.
     """
     from app.db.session import SessionLocal
     from app.engine.outcomes import backfill_insight_outcomes, backfill_trading_signals
+    from app.engine.patterns import backfill_pattern_observations
     db = SessionLocal()
     try:
+        backfill_pattern_observations(db)
         backfill_insight_outcomes(db)
         backfill_trading_signals(db)
     except Exception as e:
@@ -344,4 +352,3 @@ async def start_crawler_loop():
         finally:
             logger.info(f"Crawler poll cycle complete. Sleeping for {settings.POLL_INTERVAL_SECONDS} seconds...")
             await asyncio.sleep(settings.POLL_INTERVAL_SECONDS)
-

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log, analytics
+from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log, analytics, patterns
 from app.db.session import engine, Base
 from app.db import models  # Import models to ensure they are registered
 from app.engine.crawler import start_crawler_loop
@@ -53,6 +53,7 @@ app.include_router(health.router, prefix="/api", tags=["System Health"])
 app.include_router(option_chain.router, prefix="/api", tags=["Option Chain Data"])
 app.include_router(insights.router, prefix="/api", tags=["Market Insights"])
 app.include_router(replay.router, prefix="/api", tags=["Quant Replay Engine"])
+app.include_router(patterns.router, prefix="/api", tags=["Research Pattern Engine"])
 app.include_router(quant.router, prefix="/api", tags=["Quant Validation Console"])
 app.include_router(edge_lab.router, prefix="/api", tags=["Edge Lab Analysis"])
 app.include_router(research.router, prefix="/api", tags=["ML Research Store"])
@@ -68,4 +69,3 @@ def read_root():
         "message": "Option Intelligence Platform backend is running.",
         "docs": "/docs"
     }
-

@@ -5,12 +5,20 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base
-from app.db.models import OptionChainSnapshot, AnalyticsSnapshot, InsightOutcome, SystemMetadata
+from app.db.models import (
+    OptionChainSnapshot,
+    OptionChainStrike,
+    AnalyticsSnapshot,
+    InsightOutcome,
+    SystemMetadata,
+    TradingSignal,
+)
 from app.engine.outcomes import (
     get_prediction_direction,
     create_pending_outcome,
     evaluate_outcomes,
     backfill_insight_outcomes,
+    backfill_trading_signals,
     get_metadata,
     set_metadata
 )
@@ -365,3 +373,44 @@ class TestOutcomesEngine(unittest.TestCase):
 
         # Outcomes count should now be 6
         self.assertEqual(self.db.query(InsightOutcome).count(), 6)
+
+    def test_signal_backfill_repairs_both_version_datasets(self):
+        snapshot = OptionChainSnapshot(
+            id=201,
+            timestamp=datetime(2026, 7, 6, 4, 0),
+            symbol="NIFTY",
+            expiry_date="09-Jul-2026",
+            spot_price=25000.0,
+            provider="NSE",
+            collection_status="SUCCESS",
+        )
+        self.db.add(snapshot)
+        self.db.add(OptionChainStrike(
+            snapshot_id=201,
+            strike=25000.0,
+            call_oi=100,
+            put_oi=100,
+            call_volume=100,
+            put_volume=100,
+        ))
+        self.db.add(AnalyticsSnapshot(
+            timestamp=snapshot.timestamp,
+            symbol="NIFTY",
+            expiry_date=snapshot.expiry_date,
+            source_snapshot_id=201,
+            current_spot=25000.0,
+            pcr=1.0,
+            market_state="NEUTRAL",
+            strength="LOW",
+        ))
+        self.db.commit()
+
+        backfill_trading_signals(self.db)
+
+        versions = {
+            row.signal_version
+            for row in self.db.query(TradingSignal).filter(TradingSignal.snapshot_id == 201).all()
+        }
+        self.assertEqual(versions, {"v2", "v2.5"})
+        self.assertEqual(get_metadata(self.db, "last_backfilled_signal_snapshot_id_v2"), "201")
+        self.assertEqual(get_metadata(self.db, "last_backfilled_signal_snapshot_id_v2_5"), "201")

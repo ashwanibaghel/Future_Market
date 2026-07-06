@@ -142,10 +142,13 @@ def capture_ml_features(db: Session, snapshot_id: int, timeframe: str = "1m") ->
         # 1. Map classes
         if timeframe == "1m":
             snap_cls, strike_cls, analytics_cls = OptionChainSnapshot, OptionChainStrike, AnalyticsSnapshot
+            source_table = "option_chain_snapshots"
         elif timeframe == "5m":
             snap_cls, strike_cls, analytics_cls = OptionChainSnapshot5m, OptionChainStrike5m, AnalyticsSnapshot5m
+            source_table = "aggregated_5m_snapshots"
         elif timeframe == "15m":
             snap_cls, strike_cls, analytics_cls = OptionChainSnapshot15m, OptionChainStrike15m, AnalyticsSnapshot15m
+            source_table = "aggregated_15m_snapshots"
         else:
             raise ValueError(f"Invalid timeframe {timeframe}")
 
@@ -154,6 +157,15 @@ def capture_ml_features(db: Session, snapshot_id: int, timeframe: str = "1m") ->
         if not snapshot:
             logger.warning(f"Snapshot ID {snapshot_id} not found in {timeframe} table.")
             return False
+
+        existing = db.query(MLFeatureSnapshot).filter(
+            MLFeatureSnapshot.source_table == source_table,
+            MLFeatureSnapshot.source_snapshot_id == snapshot_id,
+            MLFeatureSnapshot.timeframe == timeframe,
+            MLFeatureSnapshot.feature_schema_version == settings.FEATURE_SCHEMA_VERSION,
+        ).first()
+        if existing:
+            return True
 
         analytics = db.query(analytics_cls).filter(analytics_cls.source_snapshot_id == snapshot_id).first()
         strikes = db.query(strike_cls).filter(strike_cls.snapshot_id == snapshot_id).all()
@@ -172,26 +184,28 @@ def capture_ml_features(db: Session, snapshot_id: int, timeframe: str = "1m") ->
         prev_spot = prev_snap.spot_price if prev_snap else None
 
         # 4. Compute temporal/session/expiry parameters
-        market_date = timestamp.strftime("%Y-%m-%d")
+        # Source timestamps are stored as naive UTC; market calendar fields use IST.
+        market_timestamp = timestamp + timedelta(hours=5, minutes=30)
+        market_date = market_timestamp.strftime("%Y-%m-%d")
         
         try:
             try:
                 expiry_dt = datetime.strptime(expiry_date, "%d-%b-%Y")
             except ValueError:
                 expiry_dt = datetime.strptime(expiry_date, "%Y-%m-%d")
-            days_to_expiry = (expiry_dt.date() - timestamp.date()).days
+            days_to_expiry = (expiry_dt.date() - market_timestamp.date()).days
         except Exception:
             days_to_expiry = 0
 
         # Session minutes
-        market_open = timestamp.replace(hour=9, minute=15, second=0, microsecond=0)
-        market_close = timestamp.replace(hour=15, minute=30, second=0, microsecond=0)
-        if timestamp < market_open:
+        market_open = market_timestamp.replace(hour=9, minute=15, second=0, microsecond=0)
+        market_close = market_timestamp.replace(hour=15, minute=30, second=0, microsecond=0)
+        if market_timestamp < market_open:
             minutes_from_open = 0
-        elif timestamp > market_close:
+        elif market_timestamp > market_close:
             minutes_from_open = 375
         else:
-            minutes_from_open = int((timestamp - market_open).total_seconds() / 60)
+            minutes_from_open = int((market_timestamp - market_open).total_seconds() / 60)
         minutes_to_close = max(0, 375 - minutes_from_open)
 
         if minutes_from_open <= 45:
@@ -202,7 +216,7 @@ def capture_ml_features(db: Session, snapshot_id: int, timeframe: str = "1m") ->
             session_phase = "MIDDAY"
 
         expiry_type = calculate_expiry_type(expiry_date)
-        day_type = calculate_day_type(timestamp, expiry_date, expiry_type)
+        day_type = calculate_day_type(market_timestamp, expiry_date, expiry_type)
 
         # 5. Extract Sentiment Metrics
         pcr = analytics.pcr if analytics else None
@@ -345,7 +359,10 @@ def capture_ml_features(db: Session, snapshot_id: int, timeframe: str = "1m") ->
             data_quality_score=data_quality_score,
             snapshot_age_seconds=snapshot_age_seconds,
             feature_flags=feature_flags,
-            feature_schema_version="v1",
+            feature_schema_version=settings.FEATURE_SCHEMA_VERSION,
+            source_table=source_table,
+            engine_version="features-v2.0",
+            dataset_version=settings.RESEARCH_DATASET_VERSION,
             pcr=pcr,
             pcr_velocity=pcr_velocity,
             oi_imbalance=oi_imbalance,

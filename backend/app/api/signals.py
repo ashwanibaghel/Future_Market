@@ -1,7 +1,8 @@
 import json
 import logging
+import math
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -16,7 +17,7 @@ router = APIRouter()
 def get_latest_signal(
     symbol: str = Query(..., description="Symbol (e.g. NIFTY, SENSEX)"),
     date: str = Query(None, description="Date in YYYY-MM-DD format"),
-    version: str = Query("v2", description="Signal engine version (v2, v2.5)"),
+    version: Literal["v2", "v2.5"] = Query("v2", description="Signal engine version (v2, v2.5)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -54,7 +55,7 @@ def get_latest_signal(
             "suggested_strike": None,
             "strike_selection_reason": None,
             "matched_conditions": 0,
-            "total_conditions": 6,
+            "total_conditions": 100,
             "reasons": json.dumps({}),
             "signal_inputs": json.dumps({
                 "spot": spot,
@@ -80,7 +81,7 @@ def get_latest_signal(
 @router.get("/signals/stats")
 def get_signals_stats(
     symbol: str = Query(..., description="Symbol (e.g. NIFTY, SENSEX)"),
-    version: str = Query("v2", description="Signal engine version (v2, v2.5)"),
+    version: Literal["v2", "v2.5"] = Query("v2", description="Signal engine version (v2, v2.5)"),
     db: Session = Depends(get_db)
 ):
     """

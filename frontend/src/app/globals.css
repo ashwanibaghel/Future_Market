@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+.replay-icon {
+  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #263044;
+  border-radius: 0.375rem;
+  color: #64748b;
+  background: #080b12;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.replay-icon:hover {
+  color: #cbd5e1;
+  background: #131923;
+}
+
 :root {
   --bg-base:       #060810;
   --bg-surface:    #0d1117;

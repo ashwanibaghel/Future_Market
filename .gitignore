@@ -26,4 +26,4 @@ backend.tar.gz
 deploy_backend.zip
 **/.env
 **/.env.*
-
+**/*.key

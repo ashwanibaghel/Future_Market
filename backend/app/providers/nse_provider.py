@@ -205,14 +205,14 @@ class NSEProvider(BaseProvider):
                     "call_oi": int(ce.get("openInterest", 0)),
                     "call_change_oi": int(ce.get("changeinOpenInterest", 0)),
                     "call_volume": int(ce.get("totalTradedVolume", 0)),
-                    "call_iv": 0.0, # Will be calculated in analytics engine
+                    "call_iv": 0.0, # NextApi payload does not provide IV.
                     "call_ltp": float(ce.get("lastPrice", 0.0)),
                     "call_bid": 0.0,
                     "call_ask": 0.0,
                     "put_oi": int(pe.get("openInterest", 0)),
                     "put_change_oi": int(pe.get("changeinOpenInterest", 0)),
                     "put_volume": int(pe.get("totalTradedVolume", 0)),
-                    "put_iv": 0.0, # Will be calculated in analytics engine
+                    "put_iv": 0.0, # NextApi payload does not provide IV.
                     "put_ltp": float(pe.get("lastPrice", 0.0)),
                     "put_bid": 0.0,
                     "put_ask": 0.0

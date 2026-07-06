@@ -186,7 +186,11 @@ def aggregate_snapshots(db: Session, interval_minutes: int):
                 )
                 # Capture ML Features for the aggregated snapshot
                 from app.engine.ml_store import capture_ml_features
-                capture_ml_features(db, agg_snapshot.id, timeframe=f"{interval_minutes}m")
+                timeframe = f"{interval_minutes}m"
+                features_captured = capture_ml_features(db, agg_snapshot.id, timeframe=timeframe)
+                if features_captured:
+                    from app.engine.patterns import capture_pattern_observation
+                    capture_pattern_observation(db, agg_snapshot.id, timeframe=timeframe)
             except Exception as ae:
                 logger.error(f"Failed to generate analytics or capture ML features for aggregated snapshot {agg_snapshot.id}: {str(ae)}")
 

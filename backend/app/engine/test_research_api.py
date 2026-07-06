@@ -47,6 +47,10 @@ class TestResearchAPI(unittest.TestCase):
         self.assertEqual(data["pending_labels"], 0)
         self.assertEqual(data["label_quality_breakdown"]["FULL"], 0)
         self.assertEqual(data["data_quality_metrics"]["avg_quality_score"], 0.0)
+        self.assertEqual(data["research_coverage"]["pattern_observations"], 0)
+        self.assertEqual(data["data_quality_metrics"]["duplicate_records"], 0)
+        self.assertEqual(data["health_summary"]["status"], "BLOCKED")
+        self.assertIn("collection_gaps", data["collection_health"])
         self.assertEqual(data["class_balance"]["15m"]["UP"], 0)
 
     def test_status_populated_db(self):
@@ -120,6 +124,8 @@ class TestResearchAPI(unittest.TestCase):
         self.assertEqual(data["class_balance"]["15m"]["UP"], 1)
         self.assertEqual(data["class_balance"]["30m"]["DOWN"], 1)
         self.assertEqual(data["class_balance"]["60m"]["SIDEWAYS"], 1)
+        self.assertIn(data["health_summary"]["status"], ["BLOCKED", "DEGRADED", "READY"])
+        self.assertEqual(len(data["health_summary"]["checks"]), 9)
 
     def test_export_api(self):
         # Seed record

@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     ACTIVE_PROVIDER: str = "NSE"
     SYMBOLS: List[str] = ["SENSEX", "NIFTY", "BANKNIFTY", "HDFCBANK", "ICICIBANK", "RELIANCE", "INFY", "TCS"]
     POLL_INTERVAL_SECONDS: int = 300
+
+    # Research dataset contracts
+    RESEARCH_ENGINE_VERSION: str = "pattern-v1.0"
+    FEATURE_SCHEMA_VERSION: str = "v2.0"
+    RESEARCH_DATASET_VERSION: str = "research-v1.0"
+    SYMBOL_SCHEMA_VERSION: str = "v1"
+    MARKET_TIMEZONE: str = "Asia/Kolkata"
     
     # DB settings
     DATABASE_URL: str = "sqlite:///./options_data.db"

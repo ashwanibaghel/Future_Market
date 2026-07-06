@@ -1,4 +1,15 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    event,
+)
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.session import Base
@@ -324,6 +335,9 @@ class MLFeatureSnapshot(Base):
     snapshot_age_seconds = Column(Float)
     feature_flags = Column(Text) # JSON string representation
     feature_schema_version = Column(String(10), default="v1")
+    source_table = Column(String(50), default="option_chain_snapshots", index=True)
+    engine_version = Column(String(20), default="features-v2.0")
+    dataset_version = Column(String(20), default="research-v1.0")
 
     # Options Sentiment Features
     pcr = Column(Float, nullable=True)
@@ -533,5 +547,167 @@ class DailyReport(Base):
     summary_json = Column(Text)
     markdown_content = Column(Text)
 
+
+class DatasetMetadata(Base):
+    """Immutable provenance record for one captured research snapshot."""
+
+    __tablename__ = "dataset_metadata"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_table",
+            "source_snapshot_id",
+            "timeframe",
+            "dataset_version",
+            name="uq_dataset_metadata_source_version",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    captured_at = Column(DateTime, default=datetime.utcnow, index=True)
+    market_timestamp = Column(DateTime, index=True)
+    symbol = Column(String(20), index=True)
+    expiry_date = Column(String(20), index=True)
+    timeframe = Column(String(10), index=True)
+    source_table = Column(String(50), index=True)
+    source_snapshot_id = Column(Integer, index=True)
+    provider = Column(String(30))
+    provider_version = Column(String(30), default="unversioned")
+    api_source = Column(String(50), default="unknown")
+    engine_version = Column(String(20), index=True)
+    feature_version = Column(String(20), index=True)
+    dataset_version = Column(String(20), index=True)
+    symbol_version = Column(String(20), default="v1")
+    timezone = Column(String(40), default="Asia/Kolkata")
+    crawl_latency_ms = Column(Integer, default=0)
+    crawl_success = Column(Boolean, default=True, index=True)
+    missing_fields = Column(Text, default="[]")
+    quality_score = Column(Integer, default=0)
+
+
+class PatternLibrary(Base):
+    """Mutable aggregate statistics for a versioned deterministic pattern."""
+
+    __tablename__ = "pattern_library"
+    __table_args__ = (
+        UniqueConstraint(
+            "symbol",
+            "timeframe",
+            "pattern_id",
+            "pattern_version",
+            name="uq_pattern_library_identity",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String(20), index=True)
+    timeframe = Column(String(10), index=True)
+    pattern_id = Column(String(100), index=True)
+    pattern_version = Column(String(20), index=True)
+    signature_json = Column(Text)
+    observed_count = Column(Integer, default=0)
+    average_confidence = Column(Float, default=0.0)
+    maximum_confidence = Column(Float, default=0.0)
+    average_age_snapshots = Column(Float, default=0.0)
+    maximum_age_snapshots = Column(Integer, default=0)
+    first_seen_at = Column(DateTime, index=True)
+    last_seen_at = Column(DateTime, index=True)
+    engine_version = Column(String(20), index=True)
+    feature_version = Column(String(20), index=True)
+    dataset_version = Column(String(20), index=True)
+
+
+class PatternObservation(Base):
+    """Append-only pattern classification for one market snapshot."""
+
+    __tablename__ = "pattern_observations"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_table",
+            "source_snapshot_id",
+            "timeframe",
+            "engine_version",
+            name="uq_pattern_observation_source_engine",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    expiry_date = Column(String(20), index=True)
+    timeframe = Column(String(10), index=True)
+    source_table = Column(String(50), index=True)
+    source_snapshot_id = Column(Integer, index=True)
+    feature_snapshot_id = Column(Integer, ForeignKey("ml_feature_snapshots.id", ondelete="SET NULL"), nullable=True, index=True)
+    dataset_metadata_id = Column(Integer, ForeignKey("dataset_metadata.id", ondelete="RESTRICT"), index=True)
+    pattern_library_id = Column(Integer, ForeignKey("pattern_library.id", ondelete="RESTRICT"), index=True)
+    pattern_id = Column(String(100), index=True)
+    pattern_version = Column(String(20), index=True)
+    pattern_confidence = Column(Float, default=0.0)
+    pattern_age_snapshots = Column(Integer, default=1)
+    pattern_started_at = Column(DateTime, index=True)
+    trend_state = Column(String(20), index=True)
+    oi_state = Column(String(20), index=True)
+    pcr_state = Column(String(20), index=True)
+    market_state = Column(String(30), nullable=True)
+    regime_trend = Column(String(20), nullable=True)
+    spot_price = Column(Float)
+    ema20 = Column(Float, nullable=True)
+    atr = Column(Float, nullable=True)
+    total_oi = Column(Integer, default=0)
+    oi_change_pct = Column(Float, default=0.0)
+    pcr = Column(Float, nullable=True)
+    pcr_change = Column(Float, default=0.0)
+    data_quality_score = Column(Integer, default=0)
+    engine_version = Column(String(20), index=True)
+    feature_version = Column(String(20), index=True)
+    dataset_version = Column(String(20), index=True)
+
+
+class FeatureLineage(Base):
+    """Append-only explanation of how one derived research feature was produced."""
+
+    __tablename__ = "feature_lineage"
+    __table_args__ = (
+        UniqueConstraint(
+            "pattern_observation_id",
+            "feature_name",
+            "feature_version",
+            name="uq_feature_lineage_observation_feature",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    pattern_observation_id = Column(Integer, ForeignKey("pattern_observations.id", ondelete="CASCADE"), index=True)
+    feature_name = Column(String(50), index=True)
+    feature_version = Column(String(20), index=True)
+    source_fields = Column(Text)
+    source_values = Column(Text)
+    transformation = Column(Text)
+    output_value = Column(Text)
+
+
+class ImmutableSnapshotError(ValueError):
+    pass
+
+
+def _prevent_immutable_update(mapper, connection, target):
+    raise ImmutableSnapshotError(
+        f"{target.__class__.__name__} rows are append-only and cannot be updated"
+    )
+
+
+for _immutable_model in (
+    OptionChainSnapshot,
+    OptionChainStrike,
+    OptionChainSnapshot5m,
+    OptionChainStrike5m,
+    OptionChainSnapshot15m,
+    OptionChainStrike15m,
+    DatasetMetadata,
+    PatternObservation,
+    FeatureLineage,
+):
+    event.listen(_immutable_model, "before_update", _prevent_immutable_update)
 
 

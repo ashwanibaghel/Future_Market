@@ -2,19 +2,34 @@ import unittest
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from fastapi.testclient import TestClient
 from app.db.session import Base
+from app.db.session import get_db
 from app.db.models import OptionChainSnapshot, OptionChainStrike
 from app.engine.replay import replay_historical_snapshots
+from app.main import app
 
 class TestReplayEngine(unittest.TestCase):
     def setUp(self):
         # Create an in-memory SQLite DB for testing
-        self.engine = create_engine("sqlite:///:memory:")
+        self.engine = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
         Base.metadata.create_all(bind=self.engine)
         self.Session = sessionmaker(bind=self.engine)
         self.db = self.Session()
 
+        def override_get_db():
+            yield self.db
+
+        app.dependency_overrides[get_db] = override_get_db
+        self.client = TestClient(app)
+
     def tearDown(self):
+        app.dependency_overrides.clear()
         self.db.close()
         Base.metadata.drop_all(bind=self.engine)
 
@@ -95,8 +110,18 @@ class TestReplayEngine(unittest.TestCase):
         # 4. Step 4 (09:50) - 33-minute gap (>30m) -> Reset to NEUTRAL, LOW
         self.assertEqual(replay_results[3]["market_state"], "NEUTRAL")
         self.assertEqual(replay_results[3]["strength"], "LOW")
+        self.assertEqual(replay_results[3]["pattern"]["age_snapshots"], 1)
+        self.assertEqual(replay_results[3]["pattern"]["pattern_version"], "pattern-v1.0")
+        self.assertIn("pattern_id", replay_results[1]["feature_lineage"])
         
         # Verify PCR, Support, and Resistance are present
         self.assertAlmostEqual(replay_results[0]["pcr"], 1.0, places=4)
         self.assertEqual(replay_results[0]["support"], 24000.0)
         self.assertEqual(replay_results[0]["resistance"], 24000.0)
+
+        response = self.client.get(
+            "/api/replay/session?symbol=NIFTY&market_date=2026-06-19"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 4)
+        self.assertEqual(response.json()["timezone"], "Asia/Kolkata")

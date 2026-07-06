@@ -1,11 +1,18 @@
 import unittest
 import json
 from datetime import datetime, timedelta
+from unittest.mock import patch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.db.session import Base
 from app.db.models import OptionChainSnapshot, OptionChainStrike, AnalyticsSnapshot, MLFeatureSnapshot, TradingSignal
-from app.engine.signals import calculate_daily_options_vwap, generate_trading_signal
+from app.api.signals import get_signals_stats
+from app.engine.signals import (
+    calculate_daily_options_vwap,
+    generate_trading_signal,
+    score_options_volume_pcr,
+    score_pcr_trend,
+)
 from app.engine.outcomes import evaluate_trading_signals, get_success_threshold_points
 
 class TestSignalEngine(unittest.TestCase):
@@ -78,7 +85,14 @@ class TestSignalEngine(unittest.TestCase):
         self.db.add(prev_snap)
         self.db.commit()
 
-        prev_strike = OptionChainStrike(snapshot_id=prev_snap.id, strike=25000.0, call_oi=100, put_oi=100)
+        prev_strike = OptionChainStrike(
+            snapshot_id=prev_snap.id,
+            strike=25000.0,
+            call_oi=100,
+            put_oi=100,
+            call_volume=50,
+            put_volume=50,
+        )
         self.db.add(prev_strike)
         prev_analytics = AnalyticsSnapshot(source_snapshot_id=prev_snap.id, pcr=1.0, market_state="NEUTRAL", strength="LOW")
         self.db.add(prev_analytics)
@@ -127,10 +141,7 @@ class TestSignalEngine(unittest.TestCase):
         # Daily Options VWAP will be 25020 since only 1 snap has volume
         # Spot (25020) > VWAP (25020) is False. Wait! In signals.py:
         # above_vwap is (current_spot > vwap). Since 25020 is not > 25020, we can add a previous snap with volume to ensure Spot > VWAP.
-        # Let's override VWAP by adding a previous snapshot with lower spot and volume
-        prev_strike.call_volume = 50
-        prev_strike.put_volume = 50
-        self.db.commit()
+        # The previous immutable strike was inserted with volume to lower daily VWAP.
         # Now VWAP = (24950 * 100 + 25020 * 200) / 300 = 24996.67
         # Spot (25020) > VWAP (24996.67) => True!
 
@@ -177,18 +188,26 @@ class TestSignalEngine(unittest.TestCase):
         self.db.add(curr_analytics)
         self.db.commit()
 
-        signal = generate_trading_signal(self.db, curr_snap.id)
+        with patch(
+            "app.engine.patterns.capture_pattern_observation",
+            side_effect=RuntimeError("research engine unavailable"),
+        ):
+            signal = generate_trading_signal(self.db, curr_snap.id)
         self.assertIsNotNone(signal)
         self.assertEqual(signal.signal_type, "NO_TRADE")
         self.assertEqual(signal.expected_strength, "Weak Setup")
-        self.assertEqual(signal.closest_failed_rule, "Market State Regime")
+        self.assertEqual(signal.closest_failed_rule, "PCR Trend Bias")
+        self.assertEqual(
+            json.loads(signal.signal_inputs)["engine_features"]["pattern_id"],
+            "UNCLASSIFIED",
+        )
 
     def test_generate_trading_signal_v25_calibrated_bullish(self):
-        now = datetime.utcnow()
+        now = datetime(2026, 7, 6, 4, 0)
         snap = OptionChainSnapshot(
             timestamp=now,
             symbol="NIFTY",
-            expiry_date="2026-06-25",
+            expiry_date="09-Jul-2026",
             spot_price=25020.0,
             collection_status="SUCCESS"
         )
@@ -217,6 +236,63 @@ class TestSignalEngine(unittest.TestCase):
         self.assertIsNotNone(sig_v25)
         self.assertEqual(sig_v2.signal_version, "v2")
         self.assertEqual(sig_v25.signal_version, "v2.5")
+        self.assertEqual(sig_v2.feature_version, "v2.0")
+        self.assertEqual(sig_v25.feature_version, "v2.5")
+
+        v2_inputs = json.loads(sig_v2.signal_inputs)
+        v25_inputs = json.loads(sig_v25.signal_inputs)
+        self.assertEqual(v2_inputs["engine_features"]["dataset_version"], "v2.0")
+        self.assertEqual(v25_inputs["engine_features"]["dataset_version"], "v2.5")
+        self.assertEqual(v2_inputs["raw_features"]["market_session"], "Opening")
+        self.assertEqual(v2_inputs["raw_features"]["days_to_expiry"], 3)
+
+    def test_pcr_direction_is_symmetric_and_version_is_validated(self):
+        self.assertEqual(score_options_volume_pcr(0.5), (10.0, 0.0))
+        self.assertEqual(score_options_volume_pcr(1.6), (0.0, 10.0))
+        self.assertEqual(score_pcr_trend(-0.1, 0.1), (10.0, 0.0, 1.0))
+        self.assertEqual(score_pcr_trend(0.1, 0.1), (0.0, 10.0, 1.0))
+
+        with self.assertRaises(ValueError):
+            generate_trading_signal(self.db, 1, version="v3")
+
+    def test_signal_stats_feature_distribution_does_not_crash(self):
+        signal = TradingSignal(
+            snapshot_id=1,
+            timestamp=datetime.utcnow(),
+            symbol="NIFTY",
+            expiry_date="09-Jul-2026",
+            spot_price=25000.0,
+            signal_type="BUY_CALL",
+            matched_conditions=75,
+            total_conditions=100,
+            reasons=json.dumps({
+                "VWAP Distance": {"contribution": 10.0},
+                "EMA Trends": {"contribution": 8.0},
+                "PCR Trend": {"contribution": 5.0},
+                "OI Change": {"contribution": 7.0, "raw": "delta_oi=2.0%, accel=0.5%"},
+            }),
+            signal_inputs=json.dumps({
+                "raw_features": {
+                    "pcr": 0.9,
+                    "volume_z_score": 1.5,
+                    "net_delta_bias": 0.2,
+                }
+            }),
+            market_state="LONG BUILD-UP",
+            signal_version="v2",
+            bullish_score=75.0,
+            bearish_score=20.0,
+            outcome_15m="WIN",
+            outcome_30m="WIN",
+            outcome_60m="WIN",
+            status="COMPLETED",
+        )
+        self.db.add(signal)
+        self.db.commit()
+
+        stats = get_signals_stats(symbol="NIFTY", version="v2", db=self.db)
+        self.assertEqual(stats["feature_distribution"]["pcr"]["count"], 1)
+        self.assertEqual(stats["feature_distribution"]["pcr"]["stddev"], 0.0)
 
     def test_sensex_signal_is_skipped(self):
         now = datetime.utcnow()
