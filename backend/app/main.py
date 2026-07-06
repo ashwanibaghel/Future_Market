@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log
+from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log, analytics
 from app.db.session import engine, Base
 from app.db import models  # Import models to ensure they are registered
 from app.engine.crawler import start_crawler_loop
@@ -59,6 +59,7 @@ app.include_router(research.router, prefix="/api", tags=["ML Research Store"])
 app.include_router(signals.router, prefix="/api", tags=["Trading Signals Advisor"])
 app.include_router(manual_decisions.router, prefix="/api", tags=["Manual Trader Decisions"])
 app.include_router(observation_log.router, prefix="/api", tags=["Daily Observation Sheet"])
+app.include_router(analytics.router, prefix="/api", tags=["Quant Analytics Reports"])
 
 @app.get("/")
 def read_root():

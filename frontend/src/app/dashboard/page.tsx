@@ -11,6 +11,7 @@ import CandlestickChart from "@/components/CandlestickChart";
 import MarketStateTimeline from "@/components/MarketStateTimeline";
 import SupportResistanceHeatmap from "@/components/SupportResistanceHeatmap";
 import OIWallMap from "@/components/OIWallMap";
+import QuantValidation from "@/components/QuantValidation";
 import {
   Activity, TrendingUp, TrendingDown, Minus,
   BarChart2, Layers, Zap, Clock, Lightbulb,
@@ -70,7 +71,7 @@ export default function DashboardPage() {
     setSignalVersion,
   } = useMarketData();
 
-  const [activeTab, setActiveTab] = useState<"overview" | "chart" | "trends" | "signals">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "chart" | "trends" | "signals" | "validation">("overview");
 
   const getWinRateForScore = (score: number) => {
     if (!signalsStats || !signalsStats.score_calibration) return null;
@@ -251,6 +252,16 @@ export default function DashboardPage() {
                   }`}
                 >
                   Signal Advisor
+                </button>
+                <button
+                  onClick={() => setActiveTab("validation")}
+                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                    activeTab === "validation"
+                      ? "border-indigo-500 text-indigo-400"
+                      : "border-transparent text-slate-500 hover:text-slate-300"
+                  }`}
+                >
+                  Quant Validation
                 </button>
               </div>
 
@@ -867,6 +878,10 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   )}
+
+              {activeTab === "validation" && (
+                <QuantValidation />
+              )}
 
             </div>
           )}

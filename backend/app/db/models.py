@@ -525,4 +525,13 @@ class MarketRegime(Base):
     regime_confidence = Column(Float, default=0.0)
 
 
+class DailyReport(Base):
+    __tablename__ = "daily_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(String(10), unique=True, index=True)  # YYYY-MM-DD
+    summary_json = Column(Text)
+    markdown_content = Column(Text)
+
+
 
