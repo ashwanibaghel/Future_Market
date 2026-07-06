@@ -72,6 +72,21 @@ export default function DashboardPage() {
 
   const [activeTab, setActiveTab] = useState<"overview" | "chart" | "trends" | "signals">("overview");
 
+  const getWinRateForScore = (score: number) => {
+    if (!signalsStats || !signalsStats.score_calibration) return null;
+    let band = null;
+    if (score >= 50 && score < 60) band = "50-60";
+    else if (score >= 60 && score < 70) band = "60-70";
+    else if (score >= 70 && score < 80) band = "70-80";
+    else if (score >= 80 && score < 90) band = "80-90";
+    else if (score >= 90 && score <= 100) band = "90-100";
+    
+    if (band) {
+      return signalsStats.score_calibration[band]?.win_rate_pct;
+    }
+    return null;
+  };
+
   const insights = insightsData.slice(0, 5);
 
   const state = data?.analytics?.market_state ?? "NEUTRAL";
@@ -503,45 +518,59 @@ export default function DashboardPage() {
                                     {isNoTrade && latestSignal.closest_failed_rule && (
                                       <div className="text-[10px] text-rose-400/85 font-black uppercase tracking-widest mt-2 flex items-center gap-1.5 bg-rose-500/5 border border-rose-500/10 px-2.5 py-1 rounded-lg w-fit">
                                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                                        Missing Confirmation: {latestSignal.closest_failed_rule}
+                                        Rejected: {latestSignal.closest_failed_rule} Missing (Score: {latestSignal.matched_conditions || 0}/100 | Threshold: {latestSignal.dynamic_threshold || 60})
                                       </div>
                                     )}
                                   </div>
 
-                                  {/* Right: Confidence Gauge */}
-                                  <div className="flex items-center gap-4 bg-[#060810]/50 border border-white/5 rounded-2xl p-4">
-                                    <div className="relative w-16 h-16 flex items-center justify-center">
-                                      {/* Circle background */}
-                                      <svg className="w-16 h-16 -rotate-90">
-                                        <circle cx="32" cy="32" r="28" className="stroke-slate-800 fill-none" strokeWidth="6" />
-                                        <circle
-                                          cx="32"
-                                          cy="32"
-                                          r="28"
-                                          className={`fill-none ${isBuyCall ? "stroke-emerald-400" : isBuyPut ? "stroke-rose-400" : "stroke-indigo-400"}`}
-                                          strokeWidth="6"
-                                          strokeDasharray={`${2 * Math.PI * 28}`}
-                                          strokeDashoffset={`${2 * Math.PI * 28 * (1 - gaugeValue / 100)}`}
-                                          strokeLinecap="round"
-                                        />
-                                      </svg>
-                                      <span className="absolute text-xs font-black font-mono text-slate-200">
-                                        {gaugeValue}%
-                                      </span>
+                                  {/* Right: Dual Score Meter */}
+                                  <div className="flex flex-col gap-3 bg-[#060810]/50 border border-white/5 rounded-2xl p-4 min-w-[260px] w-full md:w-auto">
+                                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-500">
+                                      <span>Bullish Score</span>
+                                      <span>Bearish Score</span>
                                     </div>
-                                    <div>
-                                      <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                        {isV2 
-                                          ? (isNoTrade ? "Signal Score" : "Confidence Ratio") 
-                                          : "Rule Match"}
-                                      </span>
-                                      <span className="text-xs font-bold text-slate-300">
-                                        {isV2
-                                          ? (isNoTrade 
-                                              ? `${latestSignal.matched_conditions || 0} / 100 pts (Score)`
-                                              : `${confidencePct}% Bias (Margin: ${latestSignal.decision_margin || 0} pts)`)
-                                          : `${latestSignal.matched_conditions} of ${latestSignal.total_conditions} rules`}
-                                      </span>
+                                    <div className="flex items-center gap-2.5 text-slate-100 font-mono font-bold text-xs justify-between">
+                                      <span className="text-emerald-400 whitespace-nowrap">{Math.round(latestSignal.bullish_score || 0)} pts</span>
+                                      
+                                      {/* Comparative horizontal bar */}
+                                      <div className="flex-1 min-w-[80px] h-2 bg-slate-800 rounded-full overflow-hidden flex relative border border-white/5">
+                                        {/* Bullish side (left half) */}
+                                        <div 
+                                          className="h-full bg-emerald-500 transition-all duration-500" 
+                                          style={{ width: `${(latestSignal.bullish_score || 0) / 2}%` }}
+                                        />
+                                        {/* Center divider gap */}
+                                        <div className="w-px h-full bg-slate-950 z-10 absolute left-1/2 -translate-x-1/2" />
+                                        {/* Bearish side (right half) */}
+                                        <div 
+                                          className="h-full bg-rose-500 transition-all duration-500 ml-auto" 
+                                          style={{ width: `${(latestSignal.bearish_score || 0) / 2}%` }}
+                                        />
+                                      </div>
+
+                                      <span className="text-rose-400 whitespace-nowrap">{Math.round(latestSignal.bearish_score || 0)} pts</span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-2.5 border-t border-white/5 gap-4">
+                                      <div>
+                                        <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                                          Signal Score
+                                        </span>
+                                        <span className="text-xs font-black text-slate-200 font-mono">
+                                          {Math.max(latestSignal.bullish_score || 0, latestSignal.bearish_score || 0)}/100
+                                        </span>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                                          Hist. Win Rate
+                                        </span>
+                                        <span className="text-xs font-black text-indigo-400 font-mono">
+                                          {(() => {
+                                            const score = Math.max(latestSignal.bullish_score || 0, latestSignal.bearish_score || 0);
+                                            const wr = getWinRateForScore(score);
+                                            return wr !== null ? `${wr}%` : "N/A (Pending)";
+                                          })()}
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -754,12 +783,13 @@ export default function DashboardPage() {
                               <thead>
                                 <tr className="border-b border-[#1e2433] text-[9px] font-black text-slate-500 uppercase tracking-wider">
                                   <th className="pb-3 pl-2">Time</th>
+                                  <th className="pb-3">Expiry</th>
                                   <th className="pb-3">Action</th>
                                   <th className="pb-3 font-mono">Strike</th>
                                   <th className="pb-3">15m</th>
                                   <th className="pb-3">30m</th>
                                   <th className="pb-3">60m</th>
-                                  <th className="pb-3">Move (60m)</th>
+                                  <th className="pb-3 font-mono">Move (60m)</th>
                                   <th className="pb-3">Executed?</th>
                                 </tr>
                               </thead>
@@ -783,6 +813,9 @@ export default function DashboardPage() {
                                     <tr key={sig.id} className="border-b border-white/5 hover:bg-[#131920]/40 text-xs text-slate-300 transition-colors">
                                       <td className="py-3 pl-2 text-slate-500 font-medium font-mono whitespace-nowrap">
                                         {formatISTDate(sig.timestamp)}, {formatIST(sig.timestamp, { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                      </td>
+                                      <td className="py-3 text-slate-400 font-mono whitespace-nowrap">
+                                        {sig.expiry_date || "—"}
                                       </td>
                                       <td className="py-3">
                                         <span className={`px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${badgeColor}`}>

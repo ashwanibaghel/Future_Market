@@ -395,7 +395,11 @@ def evaluate_trading_signals(db: Session):
                     else:
                         signal.outcome_15m = "FLAT"
                 else: # NO_TRADE
-                    signal.outcome_15m = "FLAT"
+                    is_bull = (signal.bullish_score or 0.0) >= (signal.bearish_score or 0.0)
+                    if is_bull:
+                        signal.outcome_15m = "MISSED_OPPORTUNITY" if signal.move_15m_points >= threshold else "CORRECT_AVOIDANCE"
+                    else:
+                        signal.outcome_15m = "MISSED_OPPORTUNITY" if signal.move_15m_points <= -threshold else "CORRECT_AVOIDANCE"
 
         # Check 30m outcome
         if signal.spot_after_30m is None:
@@ -428,7 +432,11 @@ def evaluate_trading_signals(db: Session):
                     else:
                         signal.outcome_30m = "FLAT"
                 else: # NO_TRADE
-                    signal.outcome_30m = "FLAT"
+                    is_bull = (signal.bullish_score or 0.0) >= (signal.bearish_score or 0.0)
+                    if is_bull:
+                        signal.outcome_30m = "MISSED_OPPORTUNITY" if signal.move_30m_points >= threshold else "CORRECT_AVOIDANCE"
+                    else:
+                        signal.outcome_30m = "MISSED_OPPORTUNITY" if signal.move_30m_points <= -threshold else "CORRECT_AVOIDANCE"
 
         # Check 60m outcome
         if signal.spot_after_60m is None:
@@ -461,18 +469,22 @@ def evaluate_trading_signals(db: Session):
                     else:
                         signal.outcome_60m = "FLAT"
                 else: # NO_TRADE
-                    signal.outcome_60m = "FLAT"
+                    is_bull = (signal.bullish_score or 0.0) >= (signal.bearish_score or 0.0)
+                    if is_bull:
+                        signal.outcome_60m = "MISSED_OPPORTUNITY" if signal.move_60m_points >= threshold else "CORRECT_AVOIDANCE"
+                    else:
+                        signal.outcome_60m = "MISSED_OPPORTUNITY" if signal.move_60m_points <= -threshold else "CORRECT_AVOIDANCE"
                 
                 signal.status = "COMPLETED"
 
         # Consolidate completion/age-out and resolve any remaining pending outcomes
         if signal.status == "COMPLETED" or age_seconds > 3900:
             if signal.outcome_15m == "PENDING" or signal.spot_after_15m is None:
-                signal.outcome_15m = "FLAT"
+                signal.outcome_15m = "CORRECT_AVOIDANCE" if signal.signal_type == "NO_TRADE" else "FLAT"
             if signal.outcome_30m == "PENDING" or signal.spot_after_30m is None:
-                signal.outcome_30m = "FLAT"
+                signal.outcome_30m = "CORRECT_AVOIDANCE" if signal.signal_type == "NO_TRADE" else "FLAT"
             if signal.outcome_60m == "PENDING" or signal.spot_after_60m is None:
-                signal.outcome_60m = "FLAT"
+                signal.outcome_60m = "CORRECT_AVOIDANCE" if signal.signal_type == "NO_TRADE" else "FLAT"
             signal.status = "COMPLETED"
 
         updated_count += 1

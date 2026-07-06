@@ -245,17 +245,17 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
 
     # Rule 4: OI Change (Rolling Percentile) (Max 15 pts) - Calibrated dynamically
     norm_oi = min(1.0, delta_oi / (oi_denom_factor * avg_change_oi)) if delta_oi > 0 else 0.0
-    bull_r4 = norm_oi * 15.0 if delta_oi > 0 else 0.0
-    bear_r4 = norm_oi * 15.0 if delta_oi > 0 else 0.0
-    bullish_reasons["OI Change"] = {"raw": f"delta_oi={round(delta_oi*100, 3)}%, accel={round(oi_acceleration*100, 3)}%", "normalized": norm_oi if delta_oi > 0 else 0.0, "weight": 15, "contribution": round(bull_r4, 2)}
-    bearish_reasons["OI Change"] = {"raw": f"delta_oi={round(delta_oi*100, 3)}%, accel={round(oi_acceleration*100, 3)}%", "normalized": norm_oi if delta_oi > 0 else 0.0, "weight": 15, "contribution": round(bear_r4, 2)}
+    bull_r4 = norm_oi * 15.0 if (delta_oi > 0 and market_state in ["LONG BUILD-UP", "SHORT COVERING"]) else 0.0
+    bear_r4 = norm_oi * 15.0 if (delta_oi > 0 and market_state in ["SHORT BUILD-UP", "LONG UNWINDING"]) else 0.0
+    bullish_reasons["OI Change"] = {"raw": f"delta_oi={round(delta_oi*100, 3)}%, accel={round(oi_acceleration*100, 3)}%", "normalized": norm_oi if (delta_oi > 0 and market_state in ["LONG BUILD-UP", "SHORT COVERING"]) else 0.0, "weight": 15, "contribution": round(bull_r4, 2)}
+    bearish_reasons["OI Change"] = {"raw": f"delta_oi={round(delta_oi*100, 3)}%, accel={round(oi_acceleration*100, 3)}%", "normalized": norm_oi if (delta_oi > 0 and market_state in ["SHORT BUILD-UP", "LONG UNWINDING"]) else 0.0, "weight": 15, "contribution": round(bear_r4, 2)}
 
     # Rule 5: Options Volume & Spike (Max 15 pts)
     call_vol = sum(s.call_volume for s in strikes)
     put_vol = sum(s.put_volume for s in strikes)
     pcr_vol = put_vol / call_vol if call_vol > 0 else 1.0
-    bull_pcr_vol_pts = 10.0 if pcr_vol > 1.5 else (5.0 if pcr_vol > 1.2 else (3.0 if pcr_vol > 1.0 else 0.0))
-    bear_pcr_vol_pts = 10.0 if pcr_vol < 0.6 else (5.0 if pcr_vol < 0.8 else (3.0 if pcr_vol < 1.0 else 0.0))
+    bull_pcr_vol_pts = 10.0 if pcr_vol < 0.6 else (5.0 if pcr_vol < 0.8 else (3.0 if pcr_vol < 1.0 else 0.0))
+    bear_pcr_vol_pts = 10.0 if pcr_vol > 1.5 else (5.0 if pcr_vol > 1.2 else (3.0 if pcr_vol > 1.0 else 0.0))
     vol_spike_pts = 5.0 if volume_z_score > 2.0 else (3.0 if volume_z_score > 1.0 else 0.0)
     bull_r5 = bull_pcr_vol_pts + vol_spike_pts
     bear_r5 = bear_pcr_vol_pts + vol_spike_pts
@@ -270,10 +270,10 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
             pcr_prev = prev_analytics.pcr
     delta_pcr = pcr - pcr_prev
     norm_pcr = min(1.0, abs(delta_pcr) / pcr_denom)
-    bull_r6 = norm_pcr * 10.0 if delta_pcr > 0 else 0.0
-    bear_r6 = norm_pcr * 10.0 if delta_pcr < 0 else 0.0
-    bullish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr > 0 else 0.0, "weight": 10, "contribution": round(bull_r6, 2)}
-    bearish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr < 0 else 0.0, "weight": 10, "contribution": round(bear_r6, 2)}
+    bull_r6 = norm_pcr * 10.0 if delta_pcr < 0 else 0.0
+    bear_r6 = norm_pcr * 10.0 if delta_pcr > 0 else 0.0
+    bullish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr < 0 else 0.0, "weight": 10, "contribution": round(bull_r6, 2)}
+    bearish_reasons["PCR Trend"] = {"raw": round(delta_pcr, 4), "normalized": norm_pcr if delta_pcr > 0 else 0.0, "weight": 10, "contribution": round(bear_r6, 2)}
 
     # Rule 7: Price Momentum (Max 10 pts) - Calibrated dynamically
     spot_prev = prev_snapshots[0].spot_price if prev_snapshots else current_spot
@@ -419,22 +419,135 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
         else:
             lifecycle_state = "CREATED"
 
+    # ─── EXTRA FEATURE EXTRACTION FOR ML READINESS ───
+    highest_call_oi_strike = 0.0
+    highest_put_oi_strike = 0.0
+    highest_call_vol_strike = 0.0
+    highest_put_vol_strike = 0.0
+    atm_call_oi = 0.0
+    atm_put_oi = 0.0
+
+    if strikes:
+        max_call_oi_strike = max(strikes, key=lambda s: s.call_oi or 0)
+        highest_call_oi_strike = float(max_call_oi_strike.strike)
+        
+        max_put_oi_strike = max(strikes, key=lambda s: s.put_oi or 0)
+        highest_put_oi_strike = float(max_put_oi_strike.strike)
+        
+        max_call_vol_strike = max(strikes, key=lambda s: s.call_volume or 0)
+        highest_call_vol_strike = float(max_call_vol_strike.strike)
+        
+        max_put_vol_strike = max(strikes, key=lambda s: s.put_volume or 0)
+        highest_put_vol_strike = float(max_put_vol_strike.strike)
+        
+        closest_strike = min(strikes, key=lambda s: abs(s.strike - current_spot))
+        atm_call_oi = float(closest_strike.call_oi or 0.0)
+        atm_put_oi = float(closest_strike.put_oi or 0.0)
+
+    # Market Session
+    from datetime import time, datetime, timedelta
+    t = snapshot.timestamp.time()
+    if t < time(10, 0):
+        market_session = "Opening"
+    elif t < time(12, 0):
+        market_session = "Morning Trend"
+    elif t < time(14, 0):
+        market_session = "Lunch"
+    else:
+        market_session = "Closing"
+
+    # Days to Expiry and weekly/monthly properties
+    days_to_expiry = 0
+    is_weekly_expiry = True
+    is_monthly_expiry = False
+    is_expiry_day = False
+    try:
+        exp_dt = datetime.strptime(snapshot.expiry_date, "%Y-%m-%d").date()
+        days_to_expiry = (exp_dt - snapshot.timestamp.date()).days
+        is_expiry_day = (days_to_expiry == 0)
+        is_monthly_expiry = (exp_dt.month != (exp_dt + timedelta(days=7)).month)
+        is_weekly_expiry = not is_monthly_expiry
+    except Exception:
+        pass
+
+    # Regime Duration (Snapshots)
+    regime_duration = 1
+    for ps in prev_snapshots:
+        p_analytics = db.query(AnalyticsSnapshot).filter(AnalyticsSnapshot.source_snapshot_id == ps.id).first()
+        if p_analytics and p_analytics.market_state == market_state:
+            regime_duration += 1
+        else:
+            break
+
+    # Pattern ID (Auto-hashing format)
+    trend_state = "TrendUp" if current_spot > ema20 else ("TrendDown" if current_spot < ema20 else "TrendFlat")
+    oi_state = "OIUp" if delta_oi > 0 else "OIDown"
+    pcr_state = "PCRUp" if delta_pcr > 0 else "PCRDown"
+    pattern_id = f"{trend_state}_{oi_state}_{pcr_state}"
+
+    # Market Phase (Derived)
+    if current_spot > ema20 and ema20 > ema50 and current_spot > vwap:
+        market_phase = "TRENDING_BULL"
+    elif current_spot < ema20 and ema20 < ema50 and current_spot < vwap:
+        market_phase = "TRENDING_BEAR"
+    elif (current_spot > vwap and vwap_dist > 0 and not (ema20 > ema50)) or (current_spot < vwap and vwap_dist < 0 and not (ema20 < ema50)):
+        market_phase = "BREAKOUT_ATTEMPT"
+    else:
+        market_phase = "LOW_VOL_RANGING"
+
     # Greeks bias details inside rich inputs log
     signal_inputs_dict = {
-        "spot": current_spot,
-        "pcr": pcr,
-        "vwap": vwap,
-        "ema20": ema20,
-        "ema50": ema50,
-        "atr": atr_curr,
-        "average_iv": iv_curr,
-        "volatility_multiplier": vol_multiplier,
-        "iv_multiplier": iv_multiplier,
-        "oi_acceleration": oi_acceleration,
-        "volume_z_score": volume_z_score,
-        "net_delta_bias": net_delta,
-        "market_state": market_state,
-        "strength": strength
+        "raw_features": {
+            "spot": current_spot,
+            "pcr": pcr,
+            "vwap": vwap,
+            "ema20": ema20,
+            "ema50": ema50,
+            "atr": atr_curr,
+            "average_iv": iv_curr,
+            "volatility_multiplier": vol_multiplier,
+            "iv_multiplier": iv_multiplier,
+            "oi_acceleration": oi_acceleration,
+            "volume_z_score": volume_z_score,
+            "net_delta_bias": net_delta,
+            "market_state": market_state,
+            "strength": strength,
+            "highest_call_oi_strike": highest_call_oi_strike,
+            "highest_put_oi_strike": highest_put_oi_strike,
+            "highest_call_vol_strike": highest_call_vol_strike,
+            "highest_put_vol_strike": highest_put_vol_strike,
+            "atm_call_oi": atm_call_oi,
+            "atm_put_oi": atm_put_oi,
+            "market_session": market_session,
+            "days_to_expiry": days_to_expiry,
+            "is_weekly_expiry": is_weekly_expiry,
+            "is_monthly_expiry": is_monthly_expiry,
+            "is_expiry_day": is_expiry_day
+        },
+        "engine_features": {
+            "bullish_score": bullish_score,
+            "bearish_score": bearish_score,
+            "decision_margin": decision_margin,
+            "dynamic_threshold": round(dynamic_threshold, 2),
+            "signal_version": version,
+            "closest_failed_rule": closest_failed_rule or "None",
+            "rule_contributions": reasons_v2,
+            "pattern_id": pattern_id,
+            "market_phase": market_phase,
+            "regime_duration_snapshots": regime_duration,
+            "dataset_version": "v2.5",
+            "shap_importance": {
+                "Market State": 0.0,
+                "VWAP Distance": 0.0,
+                "EMA Trends": 0.0,
+                "OI Change": 0.0,
+                "Options Volume": 0.0,
+                "PCR Trend": 0.0,
+                "Price Momentum": 0.0,
+                "Greeks": 0.0
+            },
+            "market_event": "Monthly Expiry" if is_monthly_expiry and is_expiry_day else ("Weekly Expiry" if is_weekly_expiry and is_expiry_day else "None")
+        }
     }
 
     # ATM Strike Selection
@@ -474,7 +587,7 @@ def generate_trading_signal(db: Session, snapshot_id: int, version: str = "v2") 
         dynamic_threshold=round(dynamic_threshold, 2),
         raw_signal=raw_signal,
         volume_z_score=volume_z_score,
-        feature_version="v2.0",
+        feature_version="v2.5",
         data_quality_score=data_quality_score,
         top_contributors=json.dumps(top_contribs),
         lifecycle_state=lifecycle_state,

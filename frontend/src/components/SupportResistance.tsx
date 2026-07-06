@@ -61,7 +61,14 @@ export default function SupportResistance({
           <Shield className="w-5 h-5 text-rose-400" />
           <div>
             <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">S1 (Primary Support)</span>
-            <span className="text-sm font-bold text-rose-400 font-mono">₹{s1}</span>
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-sm font-bold text-rose-400 font-mono">₹{s1}</span>
+              {spotPrice > s1 && (
+                <span className="text-[9px] text-rose-400/80 font-bold font-mono">
+                  ({Math.round(spotPrice - s1)} pts away)
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -70,7 +77,14 @@ export default function SupportResistance({
           <Shield className="w-5 h-5 text-indigo-400" />
           <div>
             <span className="block text-[9px] text-slate-500 font-bold uppercase tracking-wider">R1 (Primary Resistance)</span>
-            <span className="text-sm font-bold text-indigo-400 font-mono">₹{r1}</span>
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-sm font-bold text-indigo-400 font-mono">₹{r1}</span>
+              {r1 > spotPrice && (
+                <span className="text-[9px] text-indigo-400/80 font-bold font-mono">
+                  ({Math.round(r1 - spotPrice)} pts away)
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

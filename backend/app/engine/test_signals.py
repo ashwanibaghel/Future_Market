@@ -99,7 +99,7 @@ class TestSignalEngine(unittest.TestCase):
         
         curr_analytics = AnalyticsSnapshot(
             source_snapshot_id=curr_snap.id,
-            pcr=1.1, # pcr up
+            pcr=0.9, # pcr down (bullish trend)
             market_state="LONG BUILD-UP", # market state bullish
             strength="HIGH" # strength high
         )
