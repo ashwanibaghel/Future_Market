@@ -480,7 +480,7 @@ export default function ResearchPage() {
 
         <main className="flex-1 overflow-y-auto pb-24 md:pb-8">
           <div className="sticky top-0 z-10 border-b border-[#1e2433] bg-[#080b12]/95 px-4 py-3 backdrop-blur md:px-6">
-            <div className="flex max-w-7xl items-center gap-1">
+            <div className="flex max-w-7xl items-center gap-1 overflow-x-auto scrollbar-none whitespace-nowrap">
               {([
                 ["health", ShieldCheck, "Dataset Health"],
                 ["intelligence", Brain, "Research Intelligence"],
@@ -490,7 +490,7 @@ export default function ResearchPage() {
                 <button
                   key={value}
                   onClick={() => setTab(value)}
-                  className={`flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold transition-colors ${
+                  className={`flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold transition-colors shrink-0 ${
                     tab === value
                       ? "bg-cyan-500/15 text-cyan-300"
                       : "text-slate-500 hover:bg-[#131923] hover:text-slate-300"

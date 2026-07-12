@@ -111,7 +111,7 @@ export default function OptionChainPage() {
           {!loading && !error && data && (
             <>
               {/* Toolbar */}
-              <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b border-[#1e2433] bg-[#060810]/90 backdrop-blur-md">
+              <div className="sticky top-0 z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-5 py-3 border-b border-[#1e2433] bg-[#060810]/90 backdrop-blur-md">
                 {/* Max OI Badges */}
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1.5 rounded-lg">
@@ -130,7 +130,7 @@ export default function OptionChainPage() {
                 <button
                   id="btn-filter-atm"
                   onClick={() => setFilterATM(!filterATM)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border shrink-0 ${
                     filterATM
                       ? "bg-indigo-600/20 text-indigo-300 border-indigo-500/30"
                       : "bg-[#0d1117] text-slate-400 border-[#1e2433] hover:border-[#2a3347]"

@@ -110,7 +110,7 @@ export default function EdgeLabPage() {
         <main className="flex-1 overflow-y-auto p-5 md:p-7 pb-24 md:pb-8">
           
           {/* Timeframe Selectors */}
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#1e2433]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[#1e2433]">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-indigo-400" />
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Analysis Horizon</span>

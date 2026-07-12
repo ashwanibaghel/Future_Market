@@ -21,7 +21,7 @@ export default function BottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#0d1117]/95 backdrop-blur-md border-t border-[#1e2433] safe-area-bottom">
-      <div className="flex items-center justify-around px-2 py-2">
+      <div className="flex items-center justify-start gap-1 overflow-x-auto px-2 py-2 scrollbar-none whitespace-nowrap">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -29,7 +29,7 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all shrink-0 ${
                 active ? "text-indigo-400" : "text-slate-600 hover:text-slate-400"
               }`}
             >

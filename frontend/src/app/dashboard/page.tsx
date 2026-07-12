@@ -212,10 +212,10 @@ export default function DashboardPage() {
               <MarketStateTimeline timeline={quantData?.timeline} />
 
               {/* Tab Switcher */}
-              <div className="flex border-b border-[#1e2433] gap-6 mt-2 mb-1">
+              <div className="flex border-b border-[#1e2433] gap-4 sm:gap-6 mt-2 mb-1 overflow-x-auto scrollbar-none whitespace-nowrap max-w-full">
                 <button
                   onClick={() => setActiveTab("overview")}
-                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                  className={`shrink-0 pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
                     activeTab === "overview"
                       ? "border-indigo-500 text-indigo-400"
                       : "border-transparent text-slate-500 hover:text-slate-300"
@@ -225,7 +225,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("chart")}
-                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                  className={`shrink-0 pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
                     activeTab === "chart"
                       ? "border-indigo-500 text-indigo-400"
                       : "border-transparent text-slate-500 hover:text-slate-300"
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("trends")}
-                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                  className={`shrink-0 pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
                     activeTab === "trends"
                       ? "border-indigo-500 text-indigo-400"
                       : "border-transparent text-slate-500 hover:text-slate-300"
@@ -245,7 +245,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("signals")}
-                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                  className={`shrink-0 pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
                     activeTab === "signals"
                       ? "border-indigo-500 text-indigo-400"
                       : "border-transparent text-slate-500 hover:text-slate-300"
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab("validation")}
-                  className={`pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                  className={`shrink-0 pb-2.5 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
                     activeTab === "validation"
                       ? "border-indigo-500 text-indigo-400"
                       : "border-transparent text-slate-500 hover:text-slate-300"
