@@ -1,0 +1,410 @@
+
+
+--- PAGE 1 ---
+OI Lens Master AI Blueprint
+Building a World-Class Options Intelligence Platform
+Version:1.0
+Status: Master Roadmap
+Purpose: Long-term AI, Machine Learning, Quantitative Research & Trading Intelligence
+Architecture
+Chapter 1. Vision
+OI Lens ka objective sirf BUY CALL ya BUY PUT dena nahi hai.
+Hamara objective hai ek aisa intelligent research platform banana jo:
+• Market ko continuously observe kare.
+• Market ke recurring patterns discover kare.
+• Historical evidence ke basis par probability estimate kare.
+• Trader ko execution intelligence provide kare.
+• Aur future me specialized ML models ki madad se high-quality decision support system
+ban sake.
+Yeh ek prediction website nahi hogi.
+Yeh ek Quantitative Intelligence Platform hogi.
+Chapter 2. Design Philosophy
+Har problem ka alag AI Model.
+Ek giant model kabhi nahi.
+Reason:
+Different problems require different datasets.
+Example:
+Direction prediction aur strike selection completely different ML problems hain.
+
+--- PAGE 2 ---
+Isi liye har task ke liye dedicated model banega.
+Chapter 3. Overall System Architecture
+Market Data
+│
+▼
+Crawler Engine
+│
+▼
+Feature Engineering
+│
+▼
+Pattern Engine
+│
+├──────────────┐
+▼ ▼
+Rule Engine Dataset Builder
+│ │
+▼ ▼
+Signal Engine Research Dataset
+│ │
+└──────┬───────┘
+▼
+ML Models (Future)
+▼
+Execution Intelligence
+▼
+Final Trading Assistant
+Chapter 4. Current Phase (Present)
+Current focus:
+Build the world's cleanest Options Dataset.
+Current work:
+• Option Chain Collection
+• OI Collection
+• PCR
+• VWAP
+• EMA
+• ATR
+• Greeks
+• IV
+
+--- PAGE 3 ---
+• Signal Engine
+• Pattern Engine
+• Replay Engine
+• Quant Validation
+• Dataset Health
+• Feature Lineage
+No ML Training.
+No Auto Trading.
+Only Data Collection.
+Chapter 5. Pattern Engine
+Purpose:
+Observe market.
+Never recommend trades.
+Responsibilities:
+• Pattern Identification
+• Pattern Lifecycle
+• Pattern Frequency
+• Pattern Reliability
+• Pattern Duration
+• Pattern Evolution
+• Pattern Statistics
+Output Example
+Pattern ID
+TrendDown_OIUp_PCRUp
+Observed
+241 times
+Historical Win Rate
+72%
+Average Move
+
+--- PAGE 4 ---
+61 points
+Reliability
+High
+Pattern Engine remains unbiased.
+Chapter 6. Rule Engine
+Purpose:
+Transform raw features into scores.
+Rules:
+• Market State
+• VWAP
+• EMA
+• OI
+• PCR
+• Volume
+• Momentum
+• Greeks
+Output
+Bullish Score
+Bearish Score
+Rule Contributions
+Rejected Rule
+Dynamic Threshold
+Chapter 7. Signal Engine
+Purpose
+
+--- PAGE 5 ---
+Generate
+BUY CALL
+BUY PUT
+NO TRADE
+based on Rule Engine.
+Signal Engine never learns.
+It is deterministic.
+Chapter 8. Research Dataset
+This becomes the most valuable asset.
+Dataset stores
+Raw Features
+Derived Features
+Pattern IDs
+Market Phase
+Signal Version
+Feature Version
+Engine Version
+Metadata
+Execution Results
+Future Labels
+Dataset Version
+Nothing is overwritten.
+
+--- PAGE 6 ---
+Everything is versioned.
+Chapter 9. Future ML Models
+Model 1
+Pattern Recognition Model
+Purpose
+Recognize recurring market structures.
+Training Start
+20,000+ completed patterns.
+Model 2
+Market Direction Model
+Output
+UP
+DOWN
+SIDEWAYS
+Output Probability
+UP
+74%
+DOWN
+18%
+SIDEWAYS
+
+--- PAGE 7 ---
+8%
+Training Start
+30,000–40,000 labelled rows.
+Model 3
+Market Similarity Model
+Purpose
+Find historical days similar to current market.
+Output Example
+Current Market
+matches
+132 historical sessions
+Average Outcome
+UP
+68%
+Average Move
+43 points
+This provides evidence instead of blind prediction.
+Model 4
+Strike Selection Model
+Purpose
+Choose
+ATM
+
+--- PAGE 8 ---
+ITM
+OTM
+ATM+1
+ATM-1
+based on historical premium behaviour.
+Training
+50,000+ strike outcomes.
+Model 5
+Entry Timing Model
+Purpose
+Predict best entry delay.
+Output
+Buy Now
+Wait 1 Minute
+Wait 3 Minutes
+Wait 5 Minutes
+Expected ROI
+Expected Drawdown
+Model 6
+Exit Timing Model
+Purpose
+
+--- PAGE 9 ---
+Predict
+Best Exit
+Safe Exit
+Maximum Exit
+Expected Holding Time
+Model 7
+Holding Time Model
+Purpose
+Estimate ideal holding duration.
+Output
+Hold
+7 Minutes
+12 Minutes
+18 Minutes
+Model 8
+Risk Management Model
+Purpose
+Estimate
+Risk
+Expected Drawdown
+Market Danger
+
+--- PAGE 10 ---
+Capital Protection
+Possible Output
+Avoid Trade
+Reduce Size
+Normal Risk
+High Conviction
+Model 9
+Position Sizing Model
+Purpose
+Recommend
+1 Lot
+2 Lots
+5 Lots
+Skip Trade
+Based on
+Confidence
+Risk
+Account Size
+Expected Drawdown
+Model 10
+Portfolio Allocation Model
+
+--- PAGE 11 ---
+Purpose
+Choose best market.
+Example
+Trade NIFTY
+Skip SENSEX
+Trade BANKNIFTY
+Model 11
+Execution Intelligence Model
+This combines outputs of all previous models.
+It decides
+Direction
+Strike
+Entry
+Holding
+Exit
+Risk
+Position Size
+Model 12
+Reinforcement Learning Model
+Final phase.
+Learns continuously from completed trades.
+
+--- PAGE 12 ---
+Reward
+Profit
+Penalty
+Loss
+Implemented only after every previous model becomes stable.
+Chapter 10. Data Collection Roadmap
+Current
+Market Observation
+↓
+Pattern Observation
+↓
+Execution Dataset
+↓
+Premium Evolution
+↓
+Entry Timing Dataset
+↓
+Exit Dataset
+↓
+Strike Dataset
+↓
+Risk Dataset
+
+--- PAGE 13 ---
+↓
+ML Training
+↓
+Live Intelligence
+Chapter 11. Dataset Quality Rules
+Dataset is more important than model.
+Every sprint must improve
+Dataset Quality.
+Mandatory checks
+• Duplicate Detection
+• Missing Features
+• Provider Health
+• Label Coverage
+• Metadata Coverage
+• Pattern Coverage
+• Feature Lineage
+• Replay Validation
+• Data Quality Score
+Chapter 12. Training Rules
+No model will be trained until
+• Dataset stable
+• Multiple expiry cycles complete
+• Bullish sessions available
+• Bearish sessions available
+• Sideways sessions available
+• Execution labels completed
+• Premium evolution completed
+• Feature quality >95%
+
+--- PAGE 14 ---
+• Dataset health acceptable
+Chapter 13. Development Order
+Phase 1
+Foundation Cleanup ✅
+Phase 2
+Pattern Engine
+Phase 3
+Dataset Metadata
+Phase 4
+Dataset Health Dashboard
+Phase 5
+Market Replay Engine
+Phase 6
+Execution Dataset
+Phase 7
+Premium Evolution
+Phase 8
+Entry Timing Dataset
+Phase 9
+Exit Dataset
+Phase 10
+
+--- PAGE 15 ---
+Strike Dataset
+Phase 11
+Risk Dataset
+Phase 12
+Pattern Recognition ML
+Phase 13
+Direction Prediction ML
+Phase 14
+Strike Selection ML
+Phase 15
+Entry Timing ML
+Phase 16
+Exit Timing ML
+Phase 17
+Risk Management ML
+Phase 18
+Position Sizing ML
+Phase 19
+Execution Intelligence
+Phase 20
+Reinforcement Learning
+
+--- PAGE 16 ---
+Chapter 14. Guiding Principles
+1. Dataset first, models later.
+2. Every feature must be explainable.
+3. Never overwrite raw market data.
+4. Every derived value must be versioned.
+5. Every prediction must include historical evidence.
+6. Models must remain specialized, not monolithic.
+7. Validate everything before training.
+8. Trading decisions must always be explainable.
+9. Improve dataset quality in every sprint.
+10. Long-term consistency is more important than short-term accuracy.
+Final Vision
+OI Lens is not being built to predict the next candle.
+It is being built to become a continuously learning Quantitative Market Intelligence Platform
+that understands market structure, recognizes recurring patterns, measures probabilities from
+historical evidence, and assists traders with transparent, data-backed execution decisions.
+The long-term goal is to create a platform where every recommendation is supported by
+measurable evidence, every model has a clear responsibility, and every improvement begins with
+higher-quality data. Over time, this architecture can evolve into a world-class research and
+decision-support system capable of powering advanced trading intelligence rather than relying on
+opaque "buy/sell" predictions.

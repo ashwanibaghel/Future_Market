@@ -133,6 +133,14 @@ def run_migrations():
             "dataset_metadata",
             "pattern_observations",
             "feature_lineage",
+            "pattern_lifecycles",
+            "pattern_transitions",
+            "execution_strike_candidates",
+            "premium_evolution",
+            "entry_timing_evaluations",
+            "exit_timing_evaluations",
+            "risk_evaluations",
+            "training_registry",
         ]
         for table_name in immutable_tables:
             create_immutable_update_trigger(connection, table_name)

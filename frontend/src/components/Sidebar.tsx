@@ -14,6 +14,7 @@ import {
   Activity,
   Zap,
   Database,
+  RadioTower,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -52,6 +53,12 @@ const NAV_ITEMS = [
     label: "ML Research",
     icon: Database,
     description: "ML dataset & labels store",
+  },
+  {
+    href: "/mission-control",
+    label: "Mission Control",
+    icon: RadioTower,
+    description: "Research Operating System",
   },
 ];
 

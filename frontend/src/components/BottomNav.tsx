@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, TableProperties, BarChart3, Lightbulb, FlaskConical, Database } from "lucide-react";
+import { LayoutDashboard, TableProperties, BarChart3, Lightbulb, FlaskConical, Database, RadioTower } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/insights", label: "Insights", icon: Lightbulb },
   { href: "/edge-lab", label: "Edge Lab", icon: FlaskConical },
   { href: "/research", label: "Research", icon: Database },
+  { href: "/mission-control", label: "Control", icon: RadioTower },
 ];
 
 

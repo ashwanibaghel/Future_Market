@@ -127,6 +127,56 @@ class TestResearchAPI(unittest.TestCase):
         self.assertIn(data["health_summary"]["status"], ["BLOCKED", "DEGRADED", "READY"])
         self.assertEqual(len(data["health_summary"]["checks"]), 9)
 
+    def test_research_intelligence_api(self):
+        rec1 = MLFeatureSnapshot(
+            timestamp=datetime.utcnow() - timedelta(days=7),
+            market_date="2026-06-15",
+            timeframe="1m",
+            symbol="NIFTY",
+            expiry_date="25-Jun-2026",
+            expiry_type="MONTHLY",
+            data_quality_score=90,
+            feature_flags=json.dumps({"has_iv": True, "has_sr": True, "has_pcr": True}),
+            pcr=1.1,
+            oi_imbalance=0.2,
+            atr=15.0,
+            direction_30m="UP",
+            return_30m_pct=0.9,
+            label_quality="FULL",
+            status="COMPLETED",
+            label_ready_at=datetime.utcnow() - timedelta(days=7),
+        )
+        rec2 = MLFeatureSnapshot(
+            timestamp=datetime.utcnow(),
+            market_date="2026-06-22",
+            timeframe="1m",
+            symbol="NIFTY",
+            expiry_date="25-Jun-2026",
+            expiry_type="MONTHLY",
+            data_quality_score=70,
+            feature_flags=json.dumps({"has_iv": False, "has_sr": True, "has_pcr": True}),
+            pcr=1.3,
+            oi_imbalance=0.4,
+            atr=18.0,
+            direction_30m="DOWN",
+            return_30m_pct=-0.4,
+            status="PENDING",
+            label_ready_at=datetime.utcnow() + timedelta(minutes=30),
+        )
+        self.db.add_all([rec1, rec2])
+        self.db.commit()
+
+        response = self.client.get("/api/research/intelligence?symbol=NIFTY")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        self.assertEqual(data["label_monitor"]["total"], 2)
+        self.assertIn("30m", data["dataset_imbalance"])
+        self.assertIn("pcr", data["feature_distribution"])
+        self.assertIn("pcr", data["feature_drift"])
+        self.assertEqual(data["training_readiness"]["status"], "NOT_READY")
+        self.assertIn("training_registry", data["phase_foundations"])
+
     def test_export_api(self):
         # Seed record
         rec = MLFeatureSnapshot(

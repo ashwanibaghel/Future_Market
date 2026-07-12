@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from app.db.models import OptionChainSnapshot, OptionChainStrike
+from app.db.models import OptionChainSnapshot, OptionChainStrike, TradingSignal
 from app.engine.analytics import calculate_pcr, find_support_resistance, calculate_strengths
 from app.engine.insights import compute_market_state, compute_strike_insights
 from app.engine.patterns import classify_pattern_signature, calculate_pattern_confidence
@@ -129,6 +129,20 @@ def replay_historical_snapshots(
 
         # 8. Compute qualitative insights in-memory
         insights = compute_strike_insights(snap, strikes)
+        signal = db.query(TradingSignal).filter(
+            TradingSignal.snapshot_id == snap.id,
+            TradingSignal.symbol == symbol.upper(),
+        ).order_by(TradingSignal.timestamp.desc(), TradingSignal.id.desc()).first()
+        atm_strike = min(strikes, key=lambda strike: abs((strike.strike or 0.0) - (snap.spot_price or 0.0)))
+        premium_proxy = 0.0
+        if signal and signal.signal_type == "BUY_PUT":
+            premium_proxy = float(atm_strike.put_ltp or 0.0)
+        else:
+            premium_proxy = float(atm_strike.call_ltp or 0.0)
+        expected_move = min(
+            abs((snap.spot_price or 0.0) - (s1 or snap.spot_price or 0.0)),
+            abs((r1 or snap.spot_price or 0.0) - (snap.spot_price or 0.0)),
+        )
 
         # Record replay state
         results.append({
@@ -155,6 +169,21 @@ def replay_historical_snapshots(
                 "trend_state": signature["trend_state"],
                 "oi_state": signature["oi_state"],
                 "pcr_state": signature["pcr_state"],
+            },
+            "signal": {
+                "signal_id": signal.id if signal else None,
+                "signal_type": signal.signal_type if signal else "NO_SIGNAL",
+                "raw_signal": signal.raw_signal if signal else "NO_SIGNAL",
+                "confidence": signal.confidence_ratio if signal else 0.0,
+                "bullish_score": signal.bullish_score if signal else 0.0,
+                "bearish_score": signal.bearish_score if signal else 0.0,
+                "decision_margin": signal.decision_margin if signal else 0.0,
+                "dynamic_threshold": signal.dynamic_threshold if signal else 0.0,
+                "closest_failed_rule": signal.closest_failed_rule if signal else None,
+                "suggested_strike": signal.suggested_strike if signal else None,
+                "premium": premium_proxy,
+                "roi_pct": 0.0,
+                "expected_move": expected_move,
             },
             "feature_lineage": {
                 "oi_change_pct": {

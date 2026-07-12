@@ -1,8 +1,11 @@
 import io
 import csv
 import json
-from datetime import datetime
-from typing import Optional
+import math
+from itertools import combinations
+from collections import defaultdict
+from datetime import datetime, timedelta
+from typing import Iterable, Optional
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -10,13 +13,162 @@ from sqlalchemy import func
 from app.db.session import get_db
 from app.db.models import (
     DatasetMetadata,
+    EntryTimingEvaluation,
+    ExecutionStrikeCandidate,
+    ExitTimingEvaluation,
     FeatureLineage,
+    FeatureStoreDefinition,
     MLFeatureSnapshot,
     PatternLibrary,
     PatternObservation,
+    PremiumEvolution,
+    RiskEvaluation,
+    TrainingRegistry,
 )
 
 router = APIRouter()
+
+FEATURE_COLUMNS = {
+    "pcr": MLFeatureSnapshot.pcr,
+    "pcr_velocity": MLFeatureSnapshot.pcr_velocity,
+    "oi_imbalance": MLFeatureSnapshot.oi_imbalance,
+    "average_iv": MLFeatureSnapshot.average_iv,
+    "iv_change": MLFeatureSnapshot.iv_change,
+    "atr": MLFeatureSnapshot.atr,
+    "order_flow": MLFeatureSnapshot.order_flow,
+    "sr_compression": MLFeatureSnapshot.sr_compression,
+}
+
+
+def _percentile(sorted_values: list[float], pct: float) -> float:
+    if not sorted_values:
+        return 0.0
+    if len(sorted_values) == 1:
+        return round(sorted_values[0], 4)
+    position = (len(sorted_values) - 1) * pct
+    lower = math.floor(position)
+    upper = math.ceil(position)
+    if lower == upper:
+        return round(sorted_values[int(position)], 4)
+    weight = position - lower
+    return round(sorted_values[lower] * (1 - weight) + sorted_values[upper] * weight, 4)
+
+
+def _distribution(values: Iterable[Optional[float]]) -> dict:
+    cleaned = sorted(float(value) for value in values if value is not None)
+    count = len(cleaned)
+    if not cleaned:
+        return {
+            "count": 0,
+            "mean": 0.0,
+            "median": 0.0,
+            "std_dev": 0.0,
+            "skewness": 0.0,
+            "kurtosis": 0.0,
+            "p5": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p95": 0.0,
+        }
+    mean = sum(cleaned) / count
+    variance = sum((value - mean) ** 2 for value in cleaned) / count
+    std_dev = math.sqrt(variance)
+    if std_dev > 0:
+        skewness = sum(((value - mean) / std_dev) ** 3 for value in cleaned) / count
+        kurtosis = (sum(((value - mean) / std_dev) ** 4 for value in cleaned) / count) - 3
+    else:
+        skewness = 0.0
+        kurtosis = 0.0
+    return {
+        "count": count,
+        "mean": round(mean, 4),
+        "median": _percentile(cleaned, 0.50),
+        "std_dev": round(std_dev, 4),
+        "skewness": round(skewness, 4),
+        "kurtosis": round(kurtosis, 4),
+        "p5": _percentile(cleaned, 0.05),
+        "p25": _percentile(cleaned, 0.25),
+        "p50": _percentile(cleaned, 0.50),
+        "p75": _percentile(cleaned, 0.75),
+        "p95": _percentile(cleaned, 0.95),
+    }
+
+
+def _class_counts(rows: list[MLFeatureSnapshot], horizon: str) -> dict:
+    field = f"direction_{horizon}"
+    counts = {"UP": 0, "DOWN": 0, "SIDEWAYS": 0}
+    for row in rows:
+        value = getattr(row, field, None)
+        if value in counts:
+            counts[value] += 1
+    return counts
+
+
+def _imbalance_summary(counts: dict) -> dict:
+    total = sum(counts.values())
+    pct = {key: round((value / total * 100.0), 2) if total else 0.0 for key, value in counts.items()}
+    if not total:
+        return {
+            "counts": counts,
+            "percentages": pct,
+            "is_imbalanced": True,
+            "recommendation": "Need labeled observations before class balance can be trusted.",
+        }
+    minority = min(pct, key=pct.get)
+    majority = max(pct, key=pct.get)
+    is_imbalanced = pct[minority] < 20.0 or pct[majority] > 60.0
+    recommendation = (
+        f"Need more {minority.lower()} observations."
+        if is_imbalanced else
+        "Class balance is usable for research."
+    )
+    return {
+        "counts": counts,
+        "percentages": pct,
+        "is_imbalanced": is_imbalanced,
+        "dominant_class": majority,
+        "minority_class": minority,
+        "recommendation": recommendation,
+    }
+
+
+def _week_start(market_date: Optional[str]) -> Optional[datetime]:
+    if not market_date:
+        return None
+    try:
+        parsed = datetime.strptime(market_date, "%Y-%m-%d")
+    except ValueError:
+        return None
+    return parsed - timedelta(days=parsed.weekday())
+
+
+def _drift_status(current: dict, previous: dict) -> tuple[str, float]:
+    current_mean = current.get("mean", 0.0)
+    previous_mean = previous.get("mean", 0.0)
+    previous_std = previous.get("std_dev", 0.0)
+    if not current.get("count") or not previous.get("count"):
+        return "INSUFFICIENT_DATA", 0.0
+    denominator = previous_std if previous_std > 0 else max(abs(previous_mean), 1.0)
+    drift_score = abs(current_mean - previous_mean) / denominator
+    if drift_score >= 1.5:
+        return "HIGH", round(drift_score, 4)
+    if drift_score >= 0.75:
+        return "MEDIUM", round(drift_score, 4)
+    return "LOW", round(drift_score, 4)
+
+
+def _pearson(xs: list[float], ys: list[float]) -> float:
+    if len(xs) < 3 or len(xs) != len(ys):
+        return 0.0
+    mean_x = sum(xs) / len(xs)
+    mean_y = sum(ys) / len(ys)
+    numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+    denom_x = math.sqrt(sum((x - mean_x) ** 2 for x in xs))
+    denom_y = math.sqrt(sum((y - mean_y) ** 2 for y in ys))
+    if denom_x == 0 or denom_y == 0:
+        return 0.0
+    return round(numerator / (denom_x * denom_y), 4)
 
 @router.get("/ml-dataset-status")
 def get_ml_dataset_status(
@@ -352,6 +504,230 @@ def get_ml_dataset_status(
         },
         "class_balance": class_balance
     }
+
+
+@router.get("/research/intelligence")
+def get_research_intelligence(
+    symbol: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Research-first monitoring layer across dataset, drift, patterns, execution, and training readiness."""
+    query = db.query(MLFeatureSnapshot)
+    if symbol:
+        query = query.filter(MLFeatureSnapshot.symbol == symbol.upper())
+    rows = query.order_by(MLFeatureSnapshot.timestamp.asc()).all()
+    total = len(rows)
+    now = datetime.utcnow()
+
+    completed = sum(1 for row in rows if row.status == "COMPLETED")
+    failed = sum(1 for row in rows if row.status == "FAILED")
+    pending_rows = [row for row in rows if row.status not in ("COMPLETED", "FAILED")]
+    expired = sum(1 for row in pending_rows if row.label_ready_at and row.label_ready_at < now)
+    future_ready_times = [row.label_ready_at for row in pending_rows if row.label_ready_at and row.label_ready_at > now]
+    expected_completion_minutes = 0
+    if future_ready_times:
+        expected_completion_minutes = max(
+            0,
+            int((max(future_ready_times) - now).total_seconds() // 60),
+        )
+
+    label_monitor = {
+        "total": total,
+        "completed": completed,
+        "pending": len(pending_rows),
+        "expired": expired,
+        "failed": failed,
+        "completion_pct": round((completed / total * 100.0), 2) if total else 0.0,
+        "expected_completion_minutes": expected_completion_minutes,
+    }
+
+    imbalance = {
+        horizon: _imbalance_summary(_class_counts(rows, horizon))
+        for horizon in ("15m", "30m", "60m")
+    }
+
+    week_groups: dict[str, list[MLFeatureSnapshot]] = defaultdict(list)
+    for row in rows:
+        week = _week_start(row.market_date)
+        if week:
+            week_groups[week.strftime("%Y-%m-%d")].append(row)
+    week_keys = sorted(week_groups.keys())
+    current_week_key = week_keys[-1] if week_keys else None
+    previous_week_key = week_keys[-2] if len(week_keys) >= 2 else None
+    current_week = week_groups.get(current_week_key, [])
+    previous_week = week_groups.get(previous_week_key, [])
+
+    feature_distribution = {}
+    feature_drift = {}
+    for feature_name, column in FEATURE_COLUMNS.items():
+        values = [getattr(row, feature_name) for row in rows]
+        current_distribution = _distribution(getattr(row, feature_name) for row in current_week)
+        previous_distribution = _distribution(getattr(row, feature_name) for row in previous_week)
+        status, score = _drift_status(current_distribution, previous_distribution)
+        feature_distribution[feature_name] = _distribution(values)
+        feature_drift[feature_name] = {
+            "status": status,
+            "score": score,
+            "current_week": current_week_key,
+            "previous_week": previous_week_key,
+            "current": current_distribution,
+            "previous": previous_distribution,
+        }
+
+    target_pairs = []
+    for feature_name in FEATURE_COLUMNS:
+        xs = []
+        ys = []
+        for row in rows:
+            feature_value = getattr(row, feature_name)
+            target_value = row.return_30m_pct
+            if feature_value is not None and target_value is not None:
+                xs.append(float(feature_value))
+                ys.append(float(target_value))
+        target_pairs.append({
+            "feature": feature_name,
+            "method": "pearson_proxy",
+            "score": _pearson(xs, ys),
+            "sample_size": len(xs),
+        })
+    target_pairs.sort(key=lambda item: abs(item["score"]), reverse=True)
+
+    correlation_pairs = []
+    for left, right in combinations(FEATURE_COLUMNS.keys(), 2):
+        xs = []
+        ys = []
+        for row in rows:
+            left_value = getattr(row, left)
+            right_value = getattr(row, right)
+            if left_value is not None and right_value is not None:
+                xs.append(float(left_value))
+                ys.append(float(right_value))
+        correlation = _pearson(xs, ys)
+        if xs:
+            correlation_pairs.append({
+                "left": left,
+                "right": right,
+                "correlation": correlation,
+                "sample_size": len(xs),
+            })
+    correlation_pairs.sort(key=lambda item: abs(item["correlation"]), reverse=True)
+    strong_correlations = [item for item in correlation_pairs if abs(item["correlation"]) >= 0.70][:10]
+    redundant_features = [item for item in correlation_pairs if abs(item["correlation"]) >= 0.90][:10]
+
+    pattern_count = db.query(PatternObservation.id)
+    metadata_count = db.query(DatasetMetadata.id)
+    if symbol:
+        pattern_count = pattern_count.filter(PatternObservation.symbol == symbol.upper())
+        metadata_count = metadata_count.filter(DatasetMetadata.symbol == symbol.upper())
+    pattern_coverage = round((pattern_count.count() / total * 100.0), 2) if total else 0.0
+    metadata_coverage = round((metadata_count.count() / total * 100.0), 2) if total else 0.0
+
+    metadata_rows = metadata_count.with_entities(
+        DatasetMetadata.crawl_success,
+        DatasetMetadata.missing_fields,
+    ).all()
+    crawl_success_pct = round(
+        (sum(1 for row in metadata_rows if row.crawl_success) / len(metadata_rows) * 100.0), 2
+    ) if metadata_rows else 0.0
+    missing_field_hits = 0
+    for row in metadata_rows:
+        try:
+            missing_field_hits += len(json.loads(row.missing_fields or "[]"))
+        except json.JSONDecodeError:
+            missing_field_hits += 1
+    missing_value_pressure = round(
+        (missing_field_hits / max(1, len(metadata_rows) * 4)) * 100.0, 2
+    ) if metadata_rows else 100.0
+
+    feature_versions = {row.feature_schema_version for row in rows if row.feature_schema_version}
+    dataset_versions = {row.dataset_version for row in rows if row.dataset_version}
+    high_drift_features = [
+        name for name, payload in feature_drift.items()
+        if payload["status"] == "HIGH"
+    ]
+    balance_ok = all(not payload["is_imbalanced"] for payload in imbalance.values())
+    readiness_checks = [
+        {"key": "minimum_samples", "label": "Minimum samples", "passed": total >= 1000, "value": total, "target": 1000},
+        {"key": "class_balance", "label": "Class balance", "passed": balance_ok, "value": 0 if balance_ok else 1, "target": 0},
+        {"key": "label_completion", "label": "Label completion", "passed": label_monitor["completion_pct"] >= 80, "value": label_monitor["completion_pct"], "target": 80},
+        {"key": "pattern_coverage", "label": "Pattern coverage", "passed": pattern_coverage >= 95, "value": pattern_coverage, "target": 95},
+        {"key": "missing_values", "label": "Missing value pressure", "passed": missing_value_pressure <= 20, "value": missing_value_pressure, "target": 20},
+        {"key": "feature_drift", "label": "High drift features", "passed": len(high_drift_features) == 0, "value": len(high_drift_features), "target": 0},
+        {"key": "provider_stability", "label": "Provider stability", "passed": crawl_success_pct >= 99, "value": crawl_success_pct, "target": 99},
+        {"key": "version_consistency", "label": "Version consistency", "passed": len(feature_versions) <= 1 and len(dataset_versions) <= 1, "value": len(feature_versions) + len(dataset_versions), "target": 2},
+    ]
+    ready = all(check["passed"] for check in readiness_checks)
+
+    similar_summary = {
+        "reference_snapshot_id": None,
+        "similar_count": 0,
+        "success_30m_pct": 0.0,
+        "average_30m_move_pct": 0.0,
+        "method": "nearest-neighbor proxy on PCR, OI imbalance, and ATR",
+    }
+    latest = next((row for row in reversed(rows) if row.pcr is not None), None)
+    if latest:
+        candidates = []
+        for row in rows:
+            if row.id == latest.id or row.return_30m_pct is None:
+                continue
+            score = 0.0
+            for feature_name in ("pcr", "oi_imbalance", "atr"):
+                latest_value = getattr(latest, feature_name)
+                row_value = getattr(row, feature_name)
+                if latest_value is None or row_value is None:
+                    score += 10.0
+                    continue
+                score += abs(float(latest_value) - float(row_value)) / max(abs(float(latest_value)), 1.0)
+            candidates.append((score, row))
+        nearest = [row for _, row in sorted(candidates, key=lambda item: item[0])[:50]]
+        if nearest:
+            positive = sum(1 for row in nearest if abs(row.return_30m_pct or 0.0) >= 0.8)
+            similar_summary = {
+                "reference_snapshot_id": latest.id,
+                "similar_count": len(nearest),
+                "success_30m_pct": round((positive / len(nearest)) * 100.0, 2),
+                "average_30m_move_pct": round(sum(row.return_30m_pct or 0.0 for row in nearest) / len(nearest), 4),
+                "method": "nearest-neighbor proxy on PCR, OI imbalance, and ATR",
+            }
+
+    registry_counts = {
+        "training_registry": db.query(TrainingRegistry).count(),
+        "feature_store_definitions": db.query(FeatureStoreDefinition).count(),
+        "strike_candidates": db.query(ExecutionStrikeCandidate).count(),
+        "premium_evolution": db.query(PremiumEvolution).count(),
+        "entry_timing": db.query(EntryTimingEvaluation).count(),
+        "exit_timing": db.query(ExitTimingEvaluation).count(),
+        "risk_evaluations": db.query(RiskEvaluation).count(),
+    }
+
+    return {
+        "label_monitor": label_monitor,
+        "dataset_imbalance": imbalance,
+        "feature_distribution": feature_distribution,
+        "feature_drift": feature_drift,
+        "feature_importance": target_pairs[:10],
+        "correlation_explorer": {
+            "strong_correlations": strong_correlations,
+            "redundant_features": redundant_features,
+            "top_pairs": correlation_pairs[:15],
+        },
+        "training_readiness": {
+            "ready": ready,
+            "status": "READY" if ready else "NOT_READY",
+            "checks": readiness_checks,
+            "blocking_reasons": [check["label"] for check in readiness_checks if not check["passed"]],
+        },
+        "similar_historical_day_search": similar_summary,
+        "phase_foundations": registry_counts,
+        "coverage": {
+            "pattern_coverage_pct": pattern_coverage,
+            "metadata_coverage_pct": metadata_coverage,
+            "crawl_success_pct": crawl_success_pct,
+            "missing_value_pressure_pct": missing_value_pressure,
+        },
+    }
+
 
 @router.get("/ml-dataset-export")
 def export_ml_dataset(

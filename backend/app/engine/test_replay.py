@@ -113,6 +113,8 @@ class TestReplayEngine(unittest.TestCase):
         self.assertEqual(replay_results[3]["pattern"]["age_snapshots"], 1)
         self.assertEqual(replay_results[3]["pattern"]["pattern_version"], "pattern-v1.0")
         self.assertIn("pattern_id", replay_results[1]["feature_lineage"])
+        self.assertEqual(replay_results[0]["signal"]["signal_type"], "NO_SIGNAL")
+        self.assertIn("dynamic_threshold", replay_results[0]["signal"])
         
         # Verify PCR, Support, and Resistance are present
         self.assertAlmostEqual(replay_results[0]["pcr"], 1.0, places=4)

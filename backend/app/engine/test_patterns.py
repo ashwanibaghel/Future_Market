@@ -185,3 +185,21 @@ class TestPatternEngine(unittest.TestCase):
         metadata_response = self.client.get("/api/dataset-metadata?symbol=NIFTY")
         self.assertEqual(metadata_response.status_code, 200)
         self.assertEqual(metadata_response.json()["data"][0]["dataset_version"], "research-v1.0")
+
+        leaderboard_response = self.client.get("/api/patterns/leaderboard?symbol=NIFTY")
+        self.assertEqual(leaderboard_response.status_code, 200)
+        self.assertEqual(leaderboard_response.json()["count"], 1)
+        self.assertIn("reliability", leaderboard_response.json()["data"][0])
+
+        lifecycle_response = self.client.get("/api/patterns/lifecycles?symbol=NIFTY")
+        self.assertEqual(lifecycle_response.status_code, 200)
+        self.assertEqual(lifecycle_response.json()["count"], 1)
+        self.assertIn("duration_minutes", lifecycle_response.json()["data"][0])
+
+        transition_response = self.client.get("/api/patterns/transitions?symbol=NIFTY")
+        self.assertEqual(transition_response.status_code, 200)
+        self.assertIn("data", transition_response.json())
+
+        rule_response = self.client.get("/api/patterns/rule-leaderboard?symbol=NIFTY")
+        self.assertEqual(rule_response.status_code, 200)
+        self.assertGreaterEqual(rule_response.json()["count"], 1)

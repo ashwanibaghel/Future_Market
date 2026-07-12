@@ -687,6 +687,191 @@ class FeatureLineage(Base):
     output_value = Column(Text)
 
 
+class PatternLifecycle(Base):
+    """Append-only lifecycle summary for one contiguous pattern sequence."""
+
+    __tablename__ = "pattern_lifecycles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    timeframe = Column(String(10), index=True)
+    pattern_id = Column(String(100), index=True)
+    pattern_version = Column(String(20), index=True)
+    pattern_start = Column(DateTime, index=True)
+    pattern_end = Column(DateTime, index=True, nullable=True)
+    duration_minutes = Column(Float, default=0.0)
+    observations = Column(Integer, default=0)
+    peak_confidence = Column(Float, default=0.0)
+    peak_score = Column(Float, default=0.0)
+    average_score = Column(Float, default=0.0)
+    average_move = Column(Float, default=0.0)
+    largest_move = Column(Float, default=0.0)
+    failure_reason = Column(String(100), nullable=True)
+    completion_status = Column(String(30), default="OPEN", index=True)
+    source_observation_ids = Column(Text, default="[]")
+    dataset_version = Column(String(20), index=True)
+
+
+class PatternTransition(Base):
+    """Append-only transition edge between deterministic pattern states."""
+
+    __tablename__ = "pattern_transitions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    observed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    symbol = Column(String(20), index=True)
+    timeframe = Column(String(10), index=True)
+    from_pattern_id = Column(String(100), index=True)
+    to_pattern_id = Column(String(100), index=True)
+    transition_count = Column(Integer, default=1)
+    average_minutes = Column(Float, default=0.0)
+    pattern_version = Column(String(20), index=True)
+    dataset_version = Column(String(20), index=True)
+
+
+class ExecutionStrikeCandidate(Base):
+    """Append-only strike candidate research row captured around a signal."""
+
+    __tablename__ = "execution_strike_candidates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    captured_at = Column(DateTime, default=datetime.utcnow, index=True)
+    signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True, index=True)
+    snapshot_id = Column(Integer, index=True)
+    symbol = Column(String(20), index=True)
+    expiry_date = Column(String(20), index=True)
+    option_type = Column(String(5), index=True)
+    strike_role = Column(String(10), index=True)
+    strike = Column(Float, index=True)
+    premium = Column(Float, default=0.0)
+    spread = Column(Float, default=0.0)
+    iv = Column(Float, default=0.0)
+    oi = Column(Integer, default=0)
+    volume = Column(Integer, default=0)
+    delta = Column(Float, default=0.0)
+    gamma = Column(Float, default=0.0)
+    theta = Column(Float, default=0.0)
+    vega = Column(Float, default=0.0)
+    liquidity_score = Column(Float, default=0.0)
+    distance_from_spot = Column(Float, default=0.0)
+    expected_intrinsic_value = Column(Float, default=0.0)
+    expected_time_value = Column(Float, default=0.0)
+    feature_version = Column(String(20), index=True)
+    dataset_version = Column(String(20), index=True)
+
+
+class PremiumEvolution(Base):
+    """Append-only premium path after a signal or strike candidate."""
+
+    __tablename__ = "premium_evolution"
+
+    id = Column(Integer, primary_key=True, index=True)
+    captured_at = Column(DateTime, default=datetime.utcnow, index=True)
+    signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True, index=True)
+    candidate_id = Column(Integer, ForeignKey("execution_strike_candidates.id", ondelete="SET NULL"), nullable=True, index=True)
+    horizon_minutes = Column(Integer, index=True)
+    premium = Column(Float, default=0.0)
+    roi_pct = Column(Float, default=0.0)
+    mfe = Column(Float, default=0.0)
+    mae = Column(Float, default=0.0)
+    drawdown = Column(Float, default=0.0)
+    runup = Column(Float, default=0.0)
+    dataset_version = Column(String(20), index=True)
+
+
+class EntryTimingEvaluation(Base):
+    """Append-only delayed-entry comparison for a signal."""
+
+    __tablename__ = "entry_timing_evaluations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    captured_at = Column(DateTime, default=datetime.utcnow, index=True)
+    signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True, index=True)
+    delay_minutes = Column(Integer, index=True)
+    entry_premium = Column(Float, default=0.0)
+    outcome_roi_pct = Column(Float, default=0.0)
+    mfe = Column(Float, default=0.0)
+    mae = Column(Float, default=0.0)
+    is_optimal = Column(Boolean, default=False, index=True)
+    dataset_version = Column(String(20), index=True)
+
+
+class ExitTimingEvaluation(Base):
+    """Append-only exit comparison for a signal path."""
+
+    __tablename__ = "exit_timing_evaluations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    captured_at = Column(DateTime, default=datetime.utcnow, index=True)
+    signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True, index=True)
+    exit_minute = Column(Integer, index=True)
+    exit_premium = Column(Float, default=0.0)
+    exit_roi_pct = Column(Float, default=0.0)
+    exit_type = Column(String(20), index=True)
+    maximum_pain = Column(Float, default=0.0)
+    profit_peak = Column(Float, default=0.0)
+    dataset_version = Column(String(20), index=True)
+
+
+class RiskEvaluation(Base):
+    """Append-only risk dataset for future risk and sizing models."""
+
+    __tablename__ = "risk_evaluations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    captured_at = Column(DateTime, default=datetime.utcnow, index=True)
+    signal_id = Column(Integer, ForeignKey("trading_signals.id", ondelete="SET NULL"), nullable=True, index=True)
+    expected_risk = Column(Float, default=0.0)
+    actual_risk = Column(Float, default=0.0)
+    reward = Column(Float, default=0.0)
+    drawdown = Column(Float, default=0.0)
+    recovery_minutes = Column(Integer, default=0)
+    dataset_version = Column(String(20), index=True)
+
+
+class TrainingRegistry(Base):
+    """Append-only registry for future reproducible model experiments."""
+
+    __tablename__ = "training_registry"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registered_at = Column(DateTime, default=datetime.utcnow, index=True)
+    dataset_version = Column(String(20), index=True)
+    feature_version = Column(String(20), index=True)
+    rows = Column(Integer, default=0)
+    labels = Column(Integer, default=0)
+    training_date = Column(DateTime, nullable=True, index=True)
+    model_name = Column(String(100), index=True)
+    metrics_json = Column(Text, default="{}")
+    artifacts_json = Column(Text, default="{}")
+    feature_list_json = Column(Text, default="[]")
+    status = Column(String(20), default="REGISTERED", index=True)
+
+
+class FeatureStoreDefinition(Base):
+    """Versioned definition for engineered features shared by training and replay."""
+
+    __tablename__ = "feature_store_definitions"
+    __table_args__ = (
+        UniqueConstraint(
+            "feature_name",
+            "feature_version",
+            name="uq_feature_store_definition_version",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    feature_name = Column(String(80), index=True)
+    feature_version = Column(String(20), index=True)
+    source_fields = Column(Text, default="[]")
+    transformation = Column(Text)
+    leakage_safe = Column(Boolean, default=True, index=True)
+    owner = Column(String(50), default="research")
+    notes = Column(Text, nullable=True)
+
+
 class ImmutableSnapshotError(ValueError):
     pass
 
@@ -707,7 +892,14 @@ for _immutable_model in (
     DatasetMetadata,
     PatternObservation,
     FeatureLineage,
+    PatternLifecycle,
+    PatternTransition,
+    ExecutionStrikeCandidate,
+    PremiumEvolution,
+    EntryTimingEvaluation,
+    ExitTimingEvaluation,
+    RiskEvaluation,
+    TrainingRegistry,
 ):
     event.listen(_immutable_model, "before_update", _prevent_immutable_update)
-
 

@@ -5,6 +5,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Brain,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -14,12 +15,15 @@ import {
   Download,
   Gauge,
   GitBranch,
+  Network,
   Pause,
   Play,
   RefreshCw,
   RotateCcw,
   Server,
   ShieldCheck,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import Sidebar from "@/components/Sidebar";
@@ -28,7 +32,7 @@ import { useMarketData } from "@/context/MarketDataContext";
 
 const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
-type ResearchTab = "health" | "replay" | "exports";
+type ResearchTab = "health" | "intelligence" | "replay" | "exports";
 type HealthStatus = "READY" | "DEGRADED" | "BLOCKED";
 
 interface HealthCheck {
@@ -92,6 +96,98 @@ interface PatternLibraryItem {
   maximum_age_snapshots: number;
 }
 
+interface IntelligenceCheck {
+  key: string;
+  label: string;
+  passed: boolean;
+  value: number;
+  target: number;
+}
+
+interface ResearchIntelligence {
+  label_monitor: {
+    total: number;
+    completed: number;
+    pending: number;
+    expired: number;
+    failed: number;
+    completion_pct: number;
+    expected_completion_minutes: number;
+  };
+  dataset_imbalance: Record<string, {
+    counts: { UP: number; DOWN: number; SIDEWAYS: number };
+    percentages: { UP: number; DOWN: number; SIDEWAYS: number };
+    is_imbalanced: boolean;
+    recommendation: string;
+    dominant_class?: string;
+    minority_class?: string;
+  }>;
+  feature_distribution: Record<string, {
+    count: number;
+    mean: number;
+    median: number;
+    std_dev: number;
+    skewness: number;
+    kurtosis: number;
+    p5: number;
+    p25: number;
+    p50: number;
+    p75: number;
+    p95: number;
+  }>;
+  feature_drift: Record<string, {
+    status: "LOW" | "MEDIUM" | "HIGH" | "INSUFFICIENT_DATA";
+    score: number;
+    current_week: string | null;
+    previous_week: string | null;
+  }>;
+  feature_importance: Array<{ feature: string; method: string; score: number; sample_size: number }>;
+  correlation_explorer: {
+    strong_correlations: Array<{ left: string; right: string; correlation: number; sample_size: number }>;
+    redundant_features: Array<{ left: string; right: string; correlation: number; sample_size: number }>;
+  };
+  training_readiness: {
+    ready: boolean;
+    status: "READY" | "NOT_READY";
+    checks: IntelligenceCheck[];
+    blocking_reasons: string[];
+  };
+  similar_historical_day_search: {
+    reference_snapshot_id: number | null;
+    similar_count: number;
+    success_30m_pct: number;
+    average_30m_move_pct: number;
+    method: string;
+  };
+  phase_foundations: Record<string, number>;
+  coverage: {
+    pattern_coverage_pct: number;
+    metadata_coverage_pct: number;
+    crawl_success_pct: number;
+    missing_value_pressure_pct: number;
+  };
+}
+
+interface PatternLeaderboardItem {
+  pattern_id: string;
+  timeframe: string;
+  occurrences: number;
+  wins: number;
+  losses: number;
+  flats: number;
+  win_rate: number;
+  reliability: number;
+  average_move: number;
+  confidence_interval: { low: number; high: number };
+}
+
+interface RuleLeaderboardItem {
+  rule: string;
+  usage_count: number;
+  coverage_pct: number;
+  status: string;
+}
+
 interface ReplayPoint {
   timestamp: string;
   spot_price: number;
@@ -110,6 +206,21 @@ interface ReplayPoint {
     trend_state: string;
     oi_state: string;
     pcr_state: string;
+  };
+  signal: {
+    signal_id: number | null;
+    signal_type: string;
+    raw_signal: string;
+    confidence: number;
+    bullish_score: number;
+    bearish_score: number;
+    decision_margin: number;
+    dynamic_threshold: number;
+    closest_failed_rule: string | null;
+    suggested_strike: string | null;
+    premium: number;
+    roi_pct: number;
+    expected_move: number;
   };
   feature_lineage: Record<string, { sources: string[]; value: string | number }>;
 }
@@ -141,6 +252,13 @@ function formatReplayTime(timestamp: string) {
     second: "2-digit",
     hour12: false,
   }).format(new Date(utcValue));
+}
+
+function formatMinutes(minutes: number) {
+  if (!minutes) return "0m";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return hours ? `${hours}h ${mins}m` : `${mins}m`;
 }
 
 function MetricCard({
@@ -208,7 +326,10 @@ export default function ResearchPage() {
   const { symbol, setSymbol, selectedDate } = useMarketData();
   const [tab, setTab] = useState<ResearchTab>("health");
   const [data, setData] = useState<DatasetStatus | null>(null);
+  const [intelligence, setIntelligence] = useState<ResearchIntelligence | null>(null);
   const [patterns, setPatterns] = useState<PatternLibraryItem[]>([]);
+  const [patternLeaderboard, setPatternLeaderboard] = useState<PatternLeaderboardItem[]>([]);
+  const [ruleLeaderboard, setRuleLeaderboard] = useState<RuleLeaderboardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -234,6 +355,9 @@ export default function ResearchPage() {
     if (selectedDate) params.set("date", selectedDate);
     const healthUrl = `${BACKEND_URL}/api/ml-dataset-status?${params.toString()}`;
     const patternUrl = `${BACKEND_URL}/api/patterns/library?symbol=${encodeURIComponent(symbol)}&limit=6`;
+    const intelligenceUrl = `${BACKEND_URL}/api/research/intelligence?symbol=${encodeURIComponent(symbol)}`;
+    const leaderboardUrl = `${BACKEND_URL}/api/patterns/leaderboard?symbol=${encodeURIComponent(symbol)}&limit=8`;
+    const ruleUrl = `${BACKEND_URL}/api/patterns/rule-leaderboard?symbol=${encodeURIComponent(symbol)}`;
 
     Promise.all([
       fetch(healthUrl, { signal: controller.signal }).then((response) => {
@@ -244,10 +368,25 @@ export default function ResearchPage() {
         if (!response.ok) throw new Error("Pattern library request failed");
         return response.json() as Promise<{ data: PatternLibraryItem[] }>;
       }),
+      fetch(intelligenceUrl, { signal: controller.signal }).then((response) => {
+        if (!response.ok) throw new Error("Research intelligence request failed");
+        return response.json() as Promise<ResearchIntelligence>;
+      }),
+      fetch(leaderboardUrl, { signal: controller.signal }).then((response) => {
+        if (!response.ok) throw new Error("Pattern leaderboard request failed");
+        return response.json() as Promise<{ data: PatternLeaderboardItem[] }>;
+      }),
+      fetch(ruleUrl, { signal: controller.signal }).then((response) => {
+        if (!response.ok) throw new Error("Rule leaderboard request failed");
+        return response.json() as Promise<{ data: RuleLeaderboardItem[] }>;
+      }),
     ])
-      .then(([health, patternResponse]) => {
+      .then(([health, patternResponse, intelligenceResponse, leaderboardResponse, ruleResponse]) => {
         setData(health);
         setPatterns(patternResponse.data);
+        setIntelligence(intelligenceResponse);
+        setPatternLeaderboard(leaderboardResponse.data);
+        setRuleLeaderboard(ruleResponse.data);
         setError(null);
         setLastSync(new Date());
       })
@@ -344,6 +483,7 @@ export default function ResearchPage() {
             <div className="flex max-w-7xl items-center gap-1">
               {([
                 ["health", ShieldCheck, "Dataset Health"],
+                ["intelligence", Brain, "Research Intelligence"],
                 ["replay", Activity, "Market Replay"],
                 ["exports", Download, "Exports"],
               ] as const).map(([value, Icon, label]) => (
@@ -529,6 +669,194 @@ export default function ResearchPage() {
               </div>
             )}
 
+            {!loading && !error && intelligence && tab === "intelligence" && (
+              <div className="space-y-5">
+                <section className="grid gap-4 border-b border-[#1e2433] pb-5 lg:grid-cols-[240px_1fr]">
+                  <div className={`rounded-lg border p-5 ${intelligence.training_readiness.ready ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase">Training Readiness</span>
+                      <Brain className="h-4 w-4" />
+                    </div>
+                    <div className="mt-5 text-3xl font-black">{intelligence.training_readiness.status}</div>
+                    <div className="mt-3 text-xs leading-5 opacity-80">
+                      {intelligence.training_readiness.blocking_reasons.slice(0, 3).join(" · ") || "Dataset is research-ready"}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+                    <MetricCard label="Completed" value={`${intelligence.label_monitor.completion_pct}%`} detail={`${intelligence.label_monitor.completed}/${intelligence.label_monitor.total} labels`} icon={CheckCircle2} tone="text-emerald-300" />
+                    <MetricCard label="Pending" value={formatNumber(intelligence.label_monitor.pending)} detail={`ETA ${formatMinutes(intelligence.label_monitor.expected_completion_minutes)}`} icon={Clock3} tone="text-amber-300" />
+                    <MetricCard label="Expired" value={formatNumber(intelligence.label_monitor.expired)} detail={`${intelligence.label_monitor.failed} failed labels`} icon={AlertTriangle} tone={intelligence.label_monitor.expired ? "text-rose-300" : "text-emerald-300"} />
+                    <MetricCard label="Similar Days" value={formatNumber(intelligence.similar_historical_day_search.similar_count)} detail={`${intelligence.similar_historical_day_search.success_30m_pct}% strong moves`} icon={Target} tone="text-cyan-300" />
+                    <MetricCard label="Coverage" value={`${intelligence.coverage.pattern_coverage_pct}%`} detail={`${intelligence.coverage.metadata_coverage_pct}% metadata`} icon={GitBranch} tone="text-cyan-300" />
+                    <MetricCard label="Missing Pressure" value={`${intelligence.coverage.missing_value_pressure_pct}%`} detail={`${intelligence.coverage.crawl_success_pct}% provider`} icon={Server} tone={intelligence.coverage.missing_value_pressure_pct > 20 ? "text-amber-300" : "text-emerald-300"} />
+                  </div>
+                </section>
+
+                <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117]">
+                    <div className="flex items-center justify-between border-b border-[#202838] px-4 py-3">
+                      <div>
+                        <h2 className="text-sm font-bold text-slate-200">Readiness Checklist</h2>
+                        <p className="mt-0.5 text-[10px] uppercase text-slate-600">ML remains blocked until these pass</p>
+                      </div>
+                      <ShieldCheck className="h-4 w-4 text-cyan-400" />
+                    </div>
+                    <div className="divide-y divide-[#1a2230]">
+                      {intelligence.training_readiness.checks.map((check) => (
+                        <div key={check.key} className="grid grid-cols-[24px_1fr_90px_90px] items-center gap-2 px-4 py-2.5 text-xs">
+                          {check.passed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-amber-400" />}
+                          <span className="font-medium text-slate-300">{check.label}</span>
+                          <span className="text-right font-mono text-slate-400">{formatNumber(check.value, 2)}</span>
+                          <span className="text-right font-mono text-[10px] text-slate-600">target {check.target}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-bold text-slate-200">Dataset Imbalance</h2>
+                      <TrendingUp className="h-4 w-4 text-cyan-400" />
+                    </div>
+                    <div className="mt-4 space-y-5">
+                      {Object.entries(intelligence.dataset_imbalance).map(([horizon, payload]) => (
+                        <div key={horizon}>
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <span className="text-[10px] font-bold uppercase text-slate-500">{horizon} horizon</span>
+                            <span className={`text-[10px] font-bold ${payload.is_imbalanced ? "text-amber-400" : "text-emerald-400"}`}>{payload.is_imbalanced ? "IMBALANCED" : "BALANCED"}</span>
+                          </div>
+                          <BalanceBar values={payload.counts} />
+                          <div className="mt-2 text-[11px] text-slate-500">{payload.recommendation}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-bold text-slate-200">Feature Drift</h2>
+                      <Activity className="h-4 w-4 text-cyan-400" />
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      {Object.entries(intelligence.feature_drift).map(([feature, drift]) => (
+                        <div key={feature} className="rounded-md border border-[#1a2230] bg-[#080b12] p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate font-mono text-xs text-slate-300">{feature}</span>
+                            <span className={`text-[10px] font-bold ${drift.status === "HIGH" ? "text-rose-400" : drift.status === "MEDIUM" ? "text-amber-400" : "text-emerald-400"}`}>{drift.status}</span>
+                          </div>
+                          <div className="mt-2 font-mono text-[11px] text-slate-500">score {drift.score}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-bold text-slate-200">Feature Distribution</h2>
+                      <BarChart3 className="h-4 w-4 text-cyan-400" />
+                    </div>
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full min-w-[560px] text-left text-[11px]">
+                        <thead className="text-slate-600">
+                          <tr><th className="py-2">Feature</th><th>Mean</th><th>Median</th><th>Std</th><th>P5</th><th>P95</th></tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#1a2230]">
+                          {Object.entries(intelligence.feature_distribution).map(([feature, dist]) => (
+                            <tr key={feature} className="font-mono text-slate-400">
+                              <td className="py-2 text-cyan-300">{feature}</td>
+                              <td>{formatNumber(dist.mean, 4)}</td>
+                              <td>{formatNumber(dist.median, 4)}</td>
+                              <td>{formatNumber(dist.std_dev, 4)}</td>
+                              <td>{formatNumber(dist.p5, 4)}</td>
+                              <td>{formatNumber(dist.p95, 4)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="grid gap-5 xl:grid-cols-3">
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <h2 className="text-sm font-bold text-slate-200">Pattern Leaderboard</h2>
+                    <div className="mt-4 space-y-3">
+                      {patternLeaderboard.length === 0 && <div className="py-6 text-center text-xs text-slate-600">No pattern labels yet</div>}
+                      {patternLeaderboard.slice(0, 6).map((pattern) => (
+                        <div key={`${pattern.timeframe}-${pattern.pattern_id}`} className="border-b border-[#1a2230] pb-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="truncate font-mono text-[11px] text-slate-300" title={pattern.pattern_id}>{pattern.pattern_id}</span>
+                            <span className="font-mono text-xs text-cyan-300">{pattern.reliability}%</span>
+                          </div>
+                          <div className="mt-1 text-[10px] text-slate-600">{pattern.occurrences} obs · {pattern.win_rate}% win · CI {pattern.confidence_interval.low}-{pattern.confidence_interval.high}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <h2 className="text-sm font-bold text-slate-200">Rule Leaderboard</h2>
+                    <div className="mt-4 space-y-3">
+                      {ruleLeaderboard.map((rule) => (
+                        <div key={rule.rule}>
+                          <div className="mb-1.5 flex items-center justify-between text-[11px]">
+                            <span className="font-mono text-slate-300">{rule.rule}</span>
+                            <span className="text-slate-500">{rule.status}</span>
+                          </div>
+                          <ProgressRow label={`${rule.usage_count} uses`} value={rule.coverage_pct} color="bg-cyan-500" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-bold text-slate-200">Phase Foundations</h2>
+                      <Network className="h-4 w-4 text-cyan-400" />
+                    </div>
+                    <div className="mt-4 divide-y divide-[#1a2230]">
+                      {Object.entries(intelligence.phase_foundations).map(([name, count]) => (
+                        <div key={name} className="flex items-center justify-between py-2 text-xs">
+                          <span className="text-slate-500">{name.replaceAll("_", " ")}</span>
+                          <span className="font-mono font-bold text-slate-300">{formatNumber(count)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="grid gap-5 lg:grid-cols-2">
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <h2 className="text-sm font-bold text-slate-200">Feature Importance Proxy</h2>
+                    <div className="mt-4 space-y-3">
+                      {intelligence.feature_importance.slice(0, 6).map((feature) => (
+                        <div key={feature.feature} className="flex items-center justify-between border-b border-[#1a2230] pb-2 text-xs">
+                          <span className="font-mono text-slate-300">{feature.feature}</span>
+                          <span className="font-mono text-cyan-300">{feature.score}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-[#202838] bg-[#0d1117] p-4">
+                    <h2 className="text-sm font-bold text-slate-200">Correlation Explorer</h2>
+                    <div className="mt-4 space-y-3">
+                      {intelligence.correlation_explorer.strong_correlations.length === 0 && <div className="py-6 text-center text-xs text-slate-600">No strong correlations yet</div>}
+                      {intelligence.correlation_explorer.strong_correlations.slice(0, 6).map((pair) => (
+                        <div key={`${pair.left}-${pair.right}`} className="flex items-center justify-between border-b border-[#1a2230] pb-2 text-xs">
+                          <span className="font-mono text-slate-300">{pair.left} &lt;-&gt; {pair.right}</span>
+                          <span className="font-mono text-cyan-300">{pair.correlation}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
             {!loading && tab === "replay" && (
               <div className="space-y-5">
                 <section className="flex flex-col gap-3 border-b border-[#1e2433] pb-5 md:flex-row md:items-end md:justify-between">
@@ -609,15 +937,17 @@ export default function ResearchPage() {
                       </div>
                     </section>
 
-                    <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+                    <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-10">
                       <MetricCard label="IST Time" value={formatReplayTime(currentReplay.timestamp)} detail={`Step ${replayIndex + 1}`} icon={Clock3} tone="text-cyan-300" />
                       <MetricCard label="Spot" value={formatNumber(currentReplay.spot_price, 2)} detail={symbol} icon={Activity} />
                       <MetricCard label="PCR" value={formatNumber(currentReplay.pcr, 3)} detail={`${currentReplay.pattern.pcr_state}`} icon={BarChart3} />
                       <MetricCard label="Pattern" value={`${currentReplay.pattern.confidence}%`} detail={`${currentReplay.pattern.age_snapshots} snapshots`} icon={GitBranch} tone="text-cyan-300" />
+                      <MetricCard label="Signal" value={currentReplay.signal.signal_type} detail={`margin ${formatNumber(currentReplay.signal.decision_margin, 1)}`} icon={Target} tone={currentReplay.signal.signal_type === "NO_SIGNAL" ? "text-slate-300" : "text-emerald-300"} />
+                      <MetricCard label="Premium" value={formatNumber(currentReplay.signal.premium, 2)} detail={`ROI ${formatNumber(currentReplay.signal.roi_pct, 2)}%`} icon={TrendingUp} tone="text-amber-300" />
                       <MetricCard label="Support" value={formatNumber(currentReplay.support, 2)} detail="OI support" icon={ChevronRight} tone="text-emerald-300" />
                       <MetricCard label="Resistance" value={formatNumber(currentReplay.resistance, 2)} detail="OI resistance" icon={ChevronLeft} tone="text-rose-300" />
                       <MetricCard label="State" value={currentReplay.strength} detail={currentReplay.market_state} icon={Gauge} />
-                      <MetricCard label="IV Change" value={`${formatNumber(currentReplay.iv_change, 2)}%`} detail="Replay delta" icon={Activity} />
+                      <MetricCard label="Threshold" value={formatNumber(currentReplay.signal.dynamic_threshold, 1)} detail={`move ${formatNumber(currentReplay.signal.expected_move, 2)}`} icon={Activity} />
                     </section>
 
                     <section className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
