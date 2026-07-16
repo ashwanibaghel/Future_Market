@@ -46,3 +46,15 @@ def get_system_health(db: Session = Depends(get_db)):
         "collection_status": latest_snapshot.collection_status,
         "collection_duration_ms": latest_snapshot.collection_duration_ms
     }
+
+from fastapi import BackgroundTasks
+import asyncio
+
+async def sample_background_task(task_id: str):
+    await asyncio.sleep(2)
+    print(f"Sample task {task_id} completed successfully via the API.")
+
+@router.post("/tasks")
+def create_sample_task(background_tasks: BackgroundTasks, task_id: str = "DEMO-9CBF6D8A"):
+    background_tasks.add_task(sample_background_task, task_id)
+    return {"status": "Task accepted", "task_id": task_id, "message": "Sample task created via the API as requested"}
