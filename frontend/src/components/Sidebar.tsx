@@ -181,6 +181,7 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* Developer comment: Sidebar footer */}
       {/* Collapse toggle */}
       <div className="p-3 border-t border-[#1e2433]">
         <button
