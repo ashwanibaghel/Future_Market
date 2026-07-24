@@ -1,9 +1,13 @@
 import os
 import json
+import logging
+import tempfile
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+logger = logging.getLogger("research_os.governance.dataset_registry")
 
 # Base directory for Research Operating System Layer 2 Storage
 RESEARCH_STORAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../research_storage"))
@@ -47,12 +51,13 @@ class DatasetRegistry:
 
     def register_dataset(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Registers a dataset entry into dataset_registry.
+        Registers a dataset entry into dataset_registry using atomic file swaps.
         Mandatory provenance fields required.
         """
         required_fields = ["dataset_id", "dataset_version", "symbol", "total_rows", "sha256_checksum"]
         for field in required_fields:
             if field not in metadata:
+                logger.error("Registration failed: Missing mandatory field '%s'", field)
                 raise ValueError(f"Dataset metadata missing mandatory provenance field: '{field}'")
 
         entry = {
@@ -73,17 +78,16 @@ class DatasetRegistry:
             "status": str(metadata.get("status", "VALIDATED")),
         }
 
-        # 1. Update JSON index file for lightweight reading
+        # 1. Update JSON index file atomically (Write to temp file -> os.replace)
         existing_entries = self.list_datasets()
-        # Remove duplicate dataset_id if re-registering
         filtered = [e for e in existing_entries if e["dataset_id"] != entry["dataset_id"]]
         filtered.append(entry)
 
-        with open(self.index_json, "w", encoding="utf-8") as f:
-            json.dump(filtered, f, indent=2)
+        self._write_json_index_atomic(filtered)
 
-        # 2. Update Parquet index file
-        self._write_parquet_index(filtered)
+        # 2. Update Parquet index file atomically
+        self._write_parquet_index_atomic(filtered)
+        logger.info("Successfully registered dataset '%s' (Status: %s)", entry["dataset_id"], entry["status"])
         return entry
 
     def list_datasets(self, symbol: Optional[str] = None, status: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -94,7 +98,8 @@ class DatasetRegistry:
         try:
             with open(self.index_json, "r", encoding="utf-8") as f:
                 entries = json.load(f)
-        except Exception:
+        except Exception as exc:
+            logger.warning("Failed to read JSON dataset index: %s", str(exc))
             return []
 
         if symbol:
@@ -111,9 +116,23 @@ class DatasetRegistry:
                 return e
         return None
 
-    def _write_parquet_index(self, entries: List[Dict[str, Any]]):
-        """Helper to write entries to Parquet format."""
+    def _write_json_index_atomic(self, entries: List[Dict[str, Any]]):
+        """Helper to write JSON index atomically to prevent corruption."""
+        temp_dir = os.path.dirname(self.index_json)
+        with tempfile.NamedTemporaryFile("w", dir=temp_dir, delete=False, encoding="utf-8") as tf:
+            json.dump(entries, tf, indent=2)
+            temp_name = tf.name
+        os.replace(temp_name, self.index_json)
+
+    def _write_parquet_index_atomic(self, entries: List[Dict[str, Any]]):
+        """Helper to write Parquet index atomically."""
         if not entries:
             return
+        temp_dir = os.path.dirname(self.index_parquet)
+        with tempfile.NamedTemporaryFile("wb", dir=temp_dir, delete=False, suffix=".parquet") as tf:
+            temp_name = tf.name
+        
         table = pa.Table.from_pylist(entries)
-        pq.write_table(table, self.index_parquet, compression="zstd")
+        pq.write_table(table, temp_name, compression="zstd")
+        os.replace(temp_name, self.index_parquet)
+

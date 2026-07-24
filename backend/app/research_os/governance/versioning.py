@@ -1,8 +1,12 @@
 import hashlib
 import os
+import re
+import logging
 import subprocess
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger("research_os.versioning")
 
 # Universal Semantic Version Matrix
 RULE_ENGINE_VERSION = "R-v2.5.0"
@@ -13,6 +17,13 @@ MEMORY_LIBRARY_VERSION = "MEM-v1.0.0"
 ETL_TOOL_VERSION = "ETL-v1.0.0"
 DEFAULT_DATASET_VERSION = "DS-v1.0.0"
 
+SEMVER_REGEX = re.compile(r"^(R|K|RP|F|MEM|ETL|DS)-v\d+\.\d+\.\d+$")
+
+
+def validate_semver(version_str: str) -> bool:
+    """Validates if a version string complies with OI Lens SemVer format (e.g., DS-v1.0.0)."""
+    return bool(SEMVER_REGEX.match(version_str))
+
 
 def get_git_commit_hash() -> str:
     """Retrieve the current git commit hash for exact code reproducibility."""
@@ -22,8 +33,8 @@ def get_git_commit_hash() -> str:
         res = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True)
         if res.returncode == 0:
             return res.stdout.strip()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Failed to retrieve git commit hash: %s", str(exc))
     return "UNKNOWN_GIT_COMMIT"
 
 
@@ -58,6 +69,9 @@ def build_provenance_header(
     Constructs an immutable Provenance Header enforcing the CTO Mandate:
     'No Data Without Provenance'
     """
+    if not validate_semver(dataset_version):
+        logger.warning("dataset_version '%s' does not match SemVer regex format", dataset_version)
+
     if not git_commit_hash or git_commit_hash == "UNKNOWN_GIT_COMMIT":
         git_commit_hash = get_git_commit_hash()
 
@@ -76,3 +90,4 @@ def build_provenance_header(
             "provenance_status": provenance_status,
         }
     }
+
