@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     UPSTOX_API_KEY: str = ""
     UPSTOX_API_SECRET: str = ""
     UPSTOX_ACCESS_TOKEN: str = ""
+    DHAN_CLIENT_ID: str = ""
+    DHAN_ACCESS_TOKEN: str = ""
     ANGEL_CLIENT_ID: str = ""
     ANGEL_PASSWORD: str = ""
     ANGEL_API_KEY: str = ""
@@ -53,5 +55,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 settings = Settings()

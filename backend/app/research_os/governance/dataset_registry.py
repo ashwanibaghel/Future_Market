@@ -153,7 +153,14 @@ class DatasetRegistry:
 
         table = pa.Table.from_pylist(entries, schema=DATASET_INDEX_SCHEMA)
         pq.write_table(table, temp_name, compression="zstd")
-        os.replace(temp_name, self.index_parquet)
+        try:
+            os.replace(temp_name, self.index_parquet)
+        except PermissionError:
+            pq.write_table(table, self.index_parquet, compression="zstd")
+            try:
+                os.remove(temp_name)
+            except Exception:
+                pass
 
 
 
