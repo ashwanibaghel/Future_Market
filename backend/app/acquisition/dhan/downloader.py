@@ -55,11 +55,17 @@ class RollingStrikeDownloader:
             return []
 
         # Parse response candles
-        # Standard Dhan structure: {"status": "success", "data": {"start_Time": [...], "open": [...], ...}}
-        # Or array format: {"data": [[ts, o, h, l, c, v, oi, iv, spot], ...]}
+        # Standard Dhan structure: {"status": "success", "data": {"ce": {"start_Time": [...], "open": [...], "high": [...], "low": [...], "close": [...], "volume": [...], "oi": [...], "iv": [...], "spot": [...]}}}
         data = resp.get("data", {})
         if not data:
             return []
+
+        # If wrapped inside 'ce' or 'pe' subdict
+        if isinstance(data, dict):
+            if "ce" in data and isinstance(data["ce"], dict):
+                data = data["ce"]
+            elif "pe" in data and isinstance(data["pe"], dict):
+                data = data["pe"]
 
         records = []
         if isinstance(data, list):
@@ -76,24 +82,24 @@ class RollingStrikeDownloader:
                         "implied_volatility": float(row[7]) if len(row) > 7 else 0.0,
                         "spot_price": float(row[8]) if len(row) > 8 else 0.0,
                     })
-        elif isinstance(data, dict) and "start_Time" in data:
-            times = data.get("start_Time", [])
+        elif isinstance(data, dict):
+            times = data.get("start_Time", []) or data.get("timestamp", []) or data.get("time", [])
             opens = data.get("open", [])
             highs = data.get("high", [])
             lows = data.get("low", [])
             closes = data.get("close", [])
             vols = data.get("volume", [0] * len(times))
-            ois = data.get("open_interest", [0] * len(times))
-            ivs = data.get("implied_volatility", [0.0] * len(times))
-            spots = data.get("spot_price", [0.0] * len(times))
+            ois = data.get("oi", []) or data.get("open_interest", [0] * len(times))
+            ivs = data.get("iv", []) or data.get("implied_volatility", [0.0] * len(times))
+            spots = data.get("spot", []) or data.get("spot_price", [0.0] * len(times))
 
             for i in range(len(times)):
                 records.append({
                     "timestamp": str(times[i]),
-                    "open": float(opens[i]),
-                    "high": float(highs[i]),
-                    "low": float(lows[i]),
-                    "close": float(closes[i]),
+                    "open": float(opens[i]) if i < len(opens) else 0.0,
+                    "high": float(highs[i]) if i < len(highs) else 0.0,
+                    "low": float(lows[i]) if i < len(lows) else 0.0,
+                    "close": float(closes[i]) if i < len(closes) else 0.0,
                     "volume": int(vols[i]) if i < len(vols) else 0,
                     "open_interest": int(ois[i]) if i < len(ois) else 0,
                     "implied_volatility": float(ivs[i]) if i < len(ivs) else 0.0,

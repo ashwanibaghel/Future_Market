@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 logger = logging.getLogger("research_os.governance.dataset_registry")
 
 # Base directory for Research Operating System Layer 2 Storage
-RESEARCH_STORAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../research_storage"))
+RESEARCH_STORAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../research_storage"))
 
 # Subdirectory Hierarchy Setup
 PARQUET_LAKE_DIR = os.path.join(RESEARCH_STORAGE_DIR, "parquet_lake")
@@ -21,6 +21,25 @@ EXPERIMENT_REGISTRY_DIR = os.path.join(RESEARCH_STORAGE_DIR, "experiment_registr
 CASE_LIBRARY_DIR = os.path.join(RESEARCH_STORAGE_DIR, "case_library")
 RESEARCH_NOTEBOOKS_DIR = os.path.join(RESEARCH_STORAGE_DIR, "research_notebooks")
 FEATURE_STORE_DIR = os.path.join(RESEARCH_STORAGE_DIR, "feature_store")
+
+DATASET_INDEX_SCHEMA = pa.schema([
+    ("dataset_id", pa.string()),
+    ("dataset_version", pa.string()),
+    ("created_date", pa.string()),
+    ("symbol", pa.string()),
+    ("start_date", pa.string()),
+    ("end_date", pa.string()),
+    ("total_rows", pa.int64()),
+    ("total_snapshots", pa.int64()),
+    ("feature_version", pa.string()),
+    ("rule_version", pa.string()),
+    ("git_commit", pa.string()),
+    ("sha256_checksum", pa.string()),
+    ("compression_format", pa.string()),
+    ("storage_size_bytes", pa.int64()),
+    ("status", pa.string()),
+])
+
 
 
 def ensure_research_storage_structure() -> Dict[str, str]:
@@ -131,8 +150,10 @@ class DatasetRegistry:
         temp_dir = os.path.dirname(self.index_parquet)
         with tempfile.NamedTemporaryFile("wb", dir=temp_dir, delete=False, suffix=".parquet") as tf:
             temp_name = tf.name
-        
-        table = pa.Table.from_pylist(entries)
+
+        table = pa.Table.from_pylist(entries, schema=DATASET_INDEX_SCHEMA)
         pq.write_table(table, temp_name, compression="zstd")
         os.replace(temp_name, self.index_parquet)
+
+
 
