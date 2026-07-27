@@ -31,7 +31,27 @@ class DhanConfig:
     def from_env(cls) -> "DhanConfig":
         client_id = os.environ.get("DHAN_CLIENT_ID", "").strip()
         access_token = os.environ.get("DHAN_ACCESS_TOKEN", "").strip()
+
+        if not (client_id and access_token):
+            # Check potential .env locations
+            for env_path in [".env", "../.env", "../../.env", "backend/.env"]:
+                if os.path.exists(env_path):
+                    try:
+                        with open(env_path, "r", encoding="utf-8") as f:
+                            for line in f:
+                                line = line.strip()
+                                if line and not line.startswith("#") and "=" in line:
+                                    k, v = line.split("=", 1)
+                                    k, v = k.strip(), v.strip().strip('"').strip("'")
+                                    if k == "DHAN_CLIENT_ID" and not client_id:
+                                        client_id = v
+                                    elif k == "DHAN_ACCESS_TOKEN" and not access_token:
+                                        access_token = v
+                    except Exception:
+                        pass
+
         return cls(client_id=client_id, access_token=access_token)
 
     def is_configured(self) -> bool:
         return bool(self.client_id and self.access_token)
+
