@@ -170,10 +170,10 @@ class HistoricalBackfillEngine:
                             self.progress["last_date"] = from_str
                             self.progress["last_symbol"] = symbol
 
-                            # Rule 3: Checkpoint every 100 & 500 requests
-                            if request_counter % 100 == 0:
+                            # Save progress every 10 requests for real-time visibility
+                            if request_counter % 10 == 0:
                                 self._save_progress()
-                                logger.info("Checkpoint saved: %d requests completed", self.progress["completed"])
+                                logger.info("Progress checkpoint: %d/%d requests completed", self.progress["completed"], total_requests)
 
                             # Rule 4: Fetch with automatic retry/backoff on 429/401/500/503
                             try:
@@ -193,14 +193,8 @@ class HistoricalBackfillEngine:
                                 raw_res = self.client.post("/charts/rollingoption", payload)
                                 self._save_raw_json("DHAN", symbol, rel_strike, opt_type, from_str, raw_res)
 
-                                raw_records = self.downloader.fetch_strike_candles_window(
-                                    symbol=symbol,
-                                    strike=rel_strike,
-                                    option_type=opt_type,
-                                    from_date=from_str,
-                                    to_date=to_str,
-                                    interval=1
-                                )
+                                # Parse candles directly from raw_res to avoid duplicate HTTP calls
+                                raw_records = self.downloader.parse_raw_rolling_response(raw_res)
 
                                 for r in raw_records:
                                     ts_str = r["timestamp"]

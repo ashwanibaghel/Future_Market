@@ -50,12 +50,13 @@ class RollingStrikeDownloader:
 
         try:
             resp = self.client.post("/charts/rollingoption", payload)
+            return self.parse_raw_rolling_response(resp)
         except Exception as exc:
             logger.error("Failed to fetch rolling option for %s %s %s (%s to %s): %s", symbol, strike, option_type, from_date, to_date, str(exc))
             return []
 
-        # Parse response candles
-        # Standard Dhan structure: {"status": "success", "data": {"ce": {"start_Time": [...], "open": [...], "high": [...], "low": [...], "close": [...], "volume": [...], "oi": [...], "iv": [...], "spot": [...]}}}
+    def parse_raw_rolling_response(self, resp: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Parses raw Dhan rolling option response into structured candle dictionaries."""
         data = resp.get("data", {})
         if not data:
             return []
