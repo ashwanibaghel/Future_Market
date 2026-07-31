@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log, analytics, patterns, mission_control
+from app.api import option_chain, health, insights, replay, quant, edge_lab, research, signals, manual_decisions, observation_log, analytics, patterns, mission_control, paper_trading
 from app.db.session import engine, Base
 from app.db import models  # Import models to ensure they are registered
 from app.engine.crawler import start_crawler_loop
@@ -36,13 +36,7 @@ app = FastAPI(
 # CORS configuration to allow local and production frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://future-market-rouge.vercel.app",
-        "http://future-market-rouge.vercel.app",
-        "https://january-participation-catalogs-journal.trycloudflare.com"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -62,6 +56,7 @@ app.include_router(manual_decisions.router, prefix="/api", tags=["Manual Trader 
 app.include_router(observation_log.router, prefix="/api", tags=["Daily Observation Sheet"])
 app.include_router(analytics.router, prefix="/api", tags=["Quant Analytics Reports"])
 app.include_router(mission_control.router, prefix="/api", tags=["Mission Control Research OS"])
+app.include_router(paper_trading.router, prefix="/api", tags=["Live Paper Trading & Playback Engine"])
 
 @app.get("/")
 def read_root():

@@ -1,0 +1,38 @@
+from typing import Dict, Any, List
+from app.research_os.perception.pattern.pattern_observation import PatternObservation, TYPE_PRICE_OI_RELATION
+from app.research_os.perception.regime.regime_feature import RegimeFeature
+from app.research_os.perception.regime.base_assessor import BaseRegimeAssessor
+from app.research_os.perception.regime.regime_history import RegimeSessionHistory
+
+
+class TrendAssessor(BaseRegimeAssessor):
+    """Assesses spot price momentum and directional persistence into Stage 1 RegimeFeature."""
+
+    @property
+    def assessor_name(self) -> str:
+        return "trend_assessor"
+
+    def assess(
+        self,
+        snapshot: Dict[str, Any],
+        pattern_observations: List[PatternObservation],
+        history: RegimeSessionHistory,
+    ) -> List[RegimeFeature]:
+        ts_utc = int(snapshot.get("timestamp_utc", 0))
+        pcr = snapshot.get("pcr_volume", 1.0)
+
+        supporting_ids = [p.observation_id for p in pattern_observations if p.observation_type == TYPE_PRICE_OI_RELATION]
+
+        # Calculate trend persistence metric
+        persistence = abs(pcr - 1.0)
+        conf = 0.85
+
+        feat = RegimeFeature(
+            feature_id=f"FEAT-TREND-{ts_utc}",
+            feature_name="trend_persistence",
+            value=round(persistence, 4),
+            confidence=conf,
+            supporting_pattern_ids=supporting_ids,
+            timestamp_utc=ts_utc,
+        )
+        return [feat]

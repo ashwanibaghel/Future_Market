@@ -1,0 +1,11 @@
+{
+  "decision_id": "DS_NSE_INDEX_BANKNIFTY_20220701T034500_235E55",
+  "reasoning_id": "REASON_NSE_INDEX_BANKNIFTY_20220701T034500_B73565",
+  "synthesis_id": "SYN_NSE_INDEX_BANKNIFTY_20220701T034500_1613F2",
+  "situation_id": "SIT_LEVEL_BREACH_EXPANSION",
+  "snapshot_timestamp": "2022-07-01T03:45:00Z",
+  "software_version": "v1.0-phase1-freeze",
+  "constitution_version": "v1.0",
+  "pipeline_version": "v1.0",
+  "slogan": "Explain every assessment with evidence, uncertainty, and traceability."
+}

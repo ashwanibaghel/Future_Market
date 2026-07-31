@@ -1,0 +1,78 @@
+{
+  "mode": "LIVE_SHADOW_EVALUATION",
+  "zero_order_execution": true,
+  "assessment_timestamp": "2026-07-30T12:50:17.172339Z",
+  "live_snapshot_timestamp": "2026-07-29T09:15:00Z",
+  "market_session": "MORNING_OPENING",
+  "symbol": "NIFTY",
+  "readiness": "LOW",
+  "confidence": 10.0,
+  "top_unknowns": [
+    "Live Order Book Delta",
+    "IV Surface"
+  ],
+  "top_contradiction": "NONE",
+  "audit_hash": "d52c0090154367b8",
+  "external_stability_metrics": {
+    "assessment_stability_pct": 100.0,
+    "reasoning_drift_rate_pct": 0.0,
+    "unknown_resolution_rate_pct": 0.0,
+    "audit_reproducibility_pct": 100.0
+  },
+  "decision_support": {
+    "assessment_id": "DS_NSE_INDEX_NIFTY_20260729T091500_1F9A15",
+    "primary_situation": "SIT_LEVEL_BREACH_EXPANSION",
+    "symbol": "NIFTY",
+    "exchange": "NSE",
+    "timestamp": "2026-07-29T09:15:00Z",
+    "dominant_hypothesis": "Alternative Structure Bias",
+    "evidence_quality_confidence": 10.0,
+    "key_supporting_evidence": [
+      "Hypothesis A: Alternative Structure Bias (0 supporting episodes).",
+      "Rationale: Supported by 0/0 historical episodes (0.0% raw support rate). Average favorable excursion of +0.0%."
+    ],
+    "key_risks": [
+      "Failure Risk: Failure Cluster: NONE (0 historical failure episodes)."
+    ],
+    "information_gap": {
+      "missing_information": [
+        "Live Order Book Delta",
+        "IV Surface"
+      ],
+      "gap_impact": "MEDIUM"
+    },
+    "recommended_monitoring": [
+      "Track continuous volume participation during SIT_LEVEL_BREACH_EXPANSION.",
+      "Monitor PCR threshold boundary for structural unwinding.",
+      "Verify ATM strike shift alignment across subsequent 5m intervals."
+    ],
+    "execution_readiness": "LOW",
+    "traceability": {
+      "tier_5_assessment_id": "DS_NSE_INDEX_NIFTY_20260729T091500_1F9A15",
+      "tier_4_reasoning_id": "REASON_NSE_INDEX_NIFTY_20260729T091500_B5B2A7",
+      "tier_3_synthesis_id": "SYN_NSE_INDEX_NIFTY_20260729T091500_BEBFFA",
+      "tier_2_primary_situation": "SIT_LEVEL_BREACH_EXPANSION",
+      "tier_1_symbol": "NIFTY",
+      "tier_0_timestamp": "2026-07-29T09:15:00Z"
+    },
+    "audit_package": {
+      "decision_id": "DS_NSE_INDEX_NIFTY_20260729T091500_1F9A15",
+      "reasoning_id": "REASON_NSE_INDEX_NIFTY_20260729T091500_B5B2A7",
+      "synthesis_id": "SYN_NSE_INDEX_NIFTY_20260729T091500_BEBFFA",
+      "situation_id": "SIT_LEVEL_BREACH_EXPANSION",
+      "snapshot_timestamp": "2026-07-29T09:15:00Z",
+      "software_version": "v1.0-phase1-freeze",
+      "constitution_version": "v1.0",
+      "pipeline_version": "v1.0",
+      "slogan": "Explain every assessment with evidence, uncertainty, and traceability."
+    }
+  },
+  "traceability": {
+    "tier_5_assessment_id": "DS_NSE_INDEX_NIFTY_20260729T091500_1F9A15",
+    "tier_4_reasoning_id": "REASON_NSE_INDEX_NIFTY_20260729T091500_B5B2A7",
+    "tier_3_synthesis_id": "SYN_NSE_INDEX_NIFTY_20260729T091500_BEBFFA",
+    "tier_2_primary_situation": "SIT_LEVEL_BREACH_EXPANSION",
+    "tier_1_symbol": "NIFTY",
+    "tier_0_timestamp": "2026-07-29T09:15:00Z"
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "mode": "PLAYBACK",
+  "virtual_capital": 100000.0,
+  "starting_capital": 100000.0,
+  "todays_pnl": 0.0,
+  "todays_roi_pct": 0.0,
+  "total_signals": 3,
+  "executed_trades": 0,
+  "no_trade_count": 3,
+  "wins": 0,
+  "losses": 0,
+  "win_rate_pct": 0.0,
+  "avg_profit": 0.0,
+  "avg_loss": 0.0,
+  "max_drawdown_pct": 0.0,
+  "current_market": "NIFTY",
+  "market_status": "CLOSED",
+  "current_candle_time": "03:45",
+  "status": "ACTIVE_PROCESSING",
+  "current_ai_decision": {
+    "decision": "NO TRADE",
+    "confidence": 85.0,
+    "reason": "Trained Risk Model (MOD_08) Veto: HIGH_RISK_VETO (Severity 4)",
+    "sentiment": "Neutral",
+    "risk_level": "HIGH"
+  },
+  "model_opinions": {
+    "MOD_01_SITUATION_DISCOVERY": {
+      "name": "Situation Model",
+      "raw_prediction": [
+        0.0,
+        0.622028,
+        0.0,
+        0.377972,
+        0.0,
+        0.0
+      ],
+      "decoded_prediction": "SIT_CONSOLIDATION_COMPRESSION",
+      "opinion": "SIT_CONSOLIDATION_COMPRESSION",
+      "confidence_pct": 62.2,
+      "status": "Severity Level 4"
+    },
+    "MOD_02_REGIME_UNDERSTANDING": {
+      "name": "Regime Model",
+      "raw_prediction": [
+        0.58959,
+        7e-06,
+        1.7e-05,
+        0.00048,
+        0.40988,
+        7e-06,
+        1.9e-05
+      ],
+      "decoded_prediction": "DOWNWARD_PRESSURE_EXPANDING_EXPANSION_BREAKOUT",
+      "opinion": "DOWNWARD_PRESSURE_EXPANDING_EXPANSION_BREAKOUT",
+      "confidence_pct": 59.0,
+      "status": "ADX 22.5"
+    },
+    "MOD_03_MARKET_DIRECTION": {
+      "name": "Direction & Trend Model",
+      "raw_prediction": [
+        0
+      ],
+      "decoded_prediction": "BEARISH",
+      "opinion": "BEARISH",
+      "confidence_pct": 88.5,
+      "status": "BEARISH"
+    },
+    "MOD_04_STRIKE_SELECTION": {
+      "name": "Strike Selection Model",
+      "raw_prediction": [
+        23900.0
+      ],
+      "decoded_prediction": "ATM Strike 23900",
+      "opinion": "ATM Strike 23900",
+      "confidence_pct": 100.0,
+      "status": "ATM"
+    },
+    "MOD_05_ENTRY_TIMING": {
+      "name": "Entry Timing Model",
+      "raw_prediction": [
+        0
+      ],
+      "decoded_prediction": "Waiting For Entry Setup",
+      "opinion": "Waiting For Entry Setup",
+      "confidence_pct": 87.0,
+      "status": "WAIT"
+    },
+    "MOD_06_EXIT_TIMING": {
+      "name": "Exit Timing Model",
+      "raw_prediction": [
+        3
+      ],
+      "decoded_prediction": "TAKE_PROFIT_EXIT",
+      "opinion": "TAKE_PROFIT_EXIT",
+      "confidence_pct": 90.0,
+      "status": "MONITORING"
+    },
+    "MOD_07_HOLDING_TIME": {
+      "name": "Holding Time Model",
+      "raw_prediction": [
+        0
+      ],
+      "decoded_prediction": "Estimated Hold: 30 mins",
+      "opinion": "Estimated Hold: 30 mins",
+      "confidence_pct": 80.0,
+      "status": "TIME_HORIZON"
+    },
+    "MOD_08_RISK_MANAGEMENT": {
+      "name": "Risk Model",
+      "raw_prediction": [
+        1
+      ],
+      "decoded_prediction": "HIGH_RISK_VETO",
+      "opinion": "HIGH_RISK_VETO",
+      "confidence_pct": 92.0,
+      "status": "HIGH_RISK"
+    },
+    "MOD_09_POSITION_SIZING": {
+      "name": "Position Sizing Model",
+      "raw_prediction": [
+        1
+      ],
+      "decoded_prediction": "1 Lot (25 Qty)",
+      "opinion": "1 Lot (25 Qty)",
+      "confidence_pct": 100.0,
+      "status": "CONSERVATIVE"
+    },
+    "MOD_10_PORTFOLIO_INTELLIGENCE": {
+      "name": "Portfolio Intelligence",
+      "raw_prediction": [
+        0.0
+      ],
+      "decoded_prediction": "Single Position Allocation (Zero Correlation Risk)",
+      "opinion": "Single Position Allocation (Zero Correlation Risk)",
+      "confidence_pct": 95.0,
+      "status": "OPTIMAL"
+    },
+    "MOD_11_EXECUTION_INTELLIGENCE": {
+      "name": "Liquidity Model",
+      "raw_prediction": [
+        0
+      ],
+      "decoded_prediction": "Healthy Order Book Spread",
+      "opinion": "Healthy Order Book Spread",
+      "confidence_pct": 98.0,
+      "status": "HEALTHY"
+    },
+    "MOD_12_HISTORICAL_MEMORY": {
+      "name": "OI & Memory Model",
+      "raw_prediction": [
+        0
+      ],
+      "decoded_prediction": "Put Writing Support (PCR: 1.12)",
+      "opinion": "Put Writing Support (PCR: 1.12)",
+      "confidence_pct": 89.0,
+      "status": "SUPPORT_HOLDING"
+    }
+  },
+  "decision_fusion": {
+    "synthesis_summary": "Decision Fusion halted execution based on trained MOD_08 Risk Model output: HIGH_RISK_VETO.",
+    "dominant_weights": [
+      "MOD_03_MARKET_DIRECTION",
+      "MOD_05_ENTRY_TIMING",
+      "MOD_08_RISK_MANAGEMENT"
+    ],
+    "consensus_pct": 85.0
+  },
+  "mod13_review": {
+    "role": "Reviewer ONLY (NOT Trader)",
+    "why_trade_taken": "Trade 'NO TRADE' assessed based on Trained Risk Model (MOD_08) Veto: HIGH_RISK_VETO (Severity 4).",
+    "confidence_justified": "Confidence 85.0% is scientifically justified by multi-model agreement.",
+    "should_trade_delay": "Entry delayed due to rangebound condition.",
+    "exit_evaluation": "Exit model monitoring stop loss and target bounds.",
+    "lessons": "Observed market condition at 03:45: Neutral sentiment with NORMAL volatility.",
+    "counterfactual": "If entry had been delayed by 5 minutes, expected risk-reward delta would be neutral."
+  },
+  "trade_history": [],
+  "playback_index": 0
+}

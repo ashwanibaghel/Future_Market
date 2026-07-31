@@ -1,0 +1,44 @@
+{
+  "module_id": "MOD_08_RISK_MANAGEMENT",
+  "module_name": "MOD_08_RISK_MANAGEMENT",
+  "layer_name": "layer_2_reasoning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:46:39Z",
+  "schema_version": "2.0",
+  "model_filename": "model.cbm",
+  "dataset_fingerprint": {
+    "train_sha256": "0118ed80a6099ccd1ad4bc6d331ab8a0012cd8b0ee6b515c3a0d7dca98fc3474",
+    "val_sha256": "28645afb00293cc95a402e5febb930f789c468f491a9376b6a6cab2103f664bd",
+    "test_sha256": "6d677ac464ea7452f2847a938ef3f9b168747c1e68be51a4ada90dcc6eb34ff8",
+    "manifest_sha256": "f0d7de7969f907e1a6e1aa43a3db4f1242d6ec4ba5bd3ed34584d1f443da8c85"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 4.27,
+    "hyperparameters": {
+      "iterations": 250,
+      "depth": 6,
+      "learning_rate": 0.05,
+      "loss_function": "Logloss",
+      "verbose": 0,
+      "random_seed": 42
+    }
+  },
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "test_log_loss": 0.0,
+    "training_time_sec": 4.27
+  },
+  "feature_importance": {
+    "gap_risk_score": 99.56,
+    "max_drawdown_mae_15m": 0.3,
+    "missing_gaps_count": 0.14
+  }
+}

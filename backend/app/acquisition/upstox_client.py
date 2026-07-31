@@ -2,6 +2,7 @@ import time
 import json
 import random
 import logging
+import threading
 import urllib.request
 import urllib.parse
 from datetime import datetime, timedelta
@@ -13,23 +14,25 @@ logger = logging.getLogger("acquisition.upstox_client")
 class TokenBucket:
     """Thread-safe Token Bucket Rate Limiter enforcing client-side HTTP request caps."""
 
-    def __init__(self, rate_per_sec: float = 8.0):
+    def __init__(self, rate_per_sec: float = 5.0):
         self.rate = rate_per_sec
         self.capacity = rate_per_sec
         self.tokens = rate_per_sec
         self.last_update = time.monotonic()
+        self.lock = threading.Lock()
 
     def acquire(self):
-        """Blocks until a token is available to enforce rate limit."""
+        """Blocks thread-safely until a token is available to enforce rate limit."""
         while True:
-            now = time.monotonic()
-            elapsed = now - self.last_update
-            self.last_update = now
-            self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+            with self.lock:
+                now = time.monotonic()
+                elapsed = now - self.last_update
+                self.last_update = now
+                self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
 
-            if self.tokens >= 1.0:
-                self.tokens -= 1.0
-                return
+                if self.tokens >= 1.0:
+                    self.tokens -= 1.0
+                    return
             time.sleep(0.05)
 
 
@@ -39,7 +42,7 @@ class UpstoxApiClient:
     Handles Token Bucket rate limiting, exponential backoff with jitter, and date window pagination.
     """
 
-    def __init__(self, access_token: Optional[str] = None, rate_limit_per_sec: float = 8.0):
+    def __init__(self, access_token: Optional[str] = None, rate_limit_per_sec: float = 5.0):
         self.access_token = access_token
         self.rate_limiter = TokenBucket(rate_limit_per_sec)
         self.base_url = "https://api.upstox.com/v2"

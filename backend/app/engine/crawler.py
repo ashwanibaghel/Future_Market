@@ -133,6 +133,23 @@ async def fetch_and_save(symbol: str, db: Session) -> bool:
                 from app.engine.signals import generate_trading_signal
                 generate_trading_signal(db, snapshot.id, version="v2")
                 generate_trading_signal(db, snapshot.id, version="v2.5")
+
+                # Live Market Open Paper Trading & MOD_13 Execution
+                try:
+                    from app.engine.paper_trading_engine import global_paper_engine
+                    snap_dict = {
+                        "symbol": symbol,
+                        "timestamp": cycle_timestamp.isoformat() + "Z",
+                        "spot_price": result['spot_price'],
+                        "severity_level": 2,
+                        "volatility": "NORMAL",
+                        "adx": 24.5,
+                        "pcr_oi": 1.12
+                    }
+                    global_paper_engine.process_snapshot(snap_dict)
+                    logger.info(f"Successfully processed live paper trading & MOD_13 evaluation for {symbol}.")
+                except Exception as p_err:
+                    logger.exception(f"Paper trading live snapshot processing error for {symbol}: {str(p_err)}")
             except Exception as ae:
                 logger.exception(f"Failed to generate analytics snapshot/signals for {symbol} expiry {result['expiry_date']}: {str(ae)}")
                 

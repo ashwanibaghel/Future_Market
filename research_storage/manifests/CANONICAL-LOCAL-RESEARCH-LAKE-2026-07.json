@@ -1,0 +1,24 @@
+{
+  "dataset_id": "CANONICAL-LOCAL-RESEARCH-LAKE-2026-07",
+  "dataset_version": "D-v1.0.0",
+  "schema_version": "CS-v1.0.0",
+  "provider": "LOCAL_RESEARCH_LAKE",
+  "symbols": [
+    "NIFTY",
+    "ICICIBANK",
+    "HDFCBANK",
+    "SENSEX",
+    "INFY",
+    "TCS",
+    "BANKNIFTY",
+    "RELIANCE"
+  ],
+  "asset_type": "OPTIONS",
+  "time_range": {
+    "start_date": "2026-06-22",
+    "end_date": "2026-07-08"
+  },
+  "row_count": 240,
+  "checksum": "590541fefbb1ba57ce94395469fc2c6c88360853f8b3f26892c8ba9dc8f6129a",
+  "creation_timestamp": "2026-07-28T07:38:05.400492+00:00"
+}

@@ -1,0 +1,544 @@
+{
+  "registry_version": "1.0",
+  "updated_at": "2026-07-29T20:52:07Z",
+  "models": {
+    "MOD_01_SITUATION_DISCOVERY": [
+      {
+        "module_id": "MOD_01_SITUATION_DISCOVERY",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:44:56Z",
+        "dataset_fingerprint": {
+          "train_sha256": "281dedec78f5cdda16dabe3c06ee09c20f70d8a9e77304e33afd4efd96b5bab7",
+          "val_sha256": "e1a013cad1160fa9133fffa7bb5f4915527ced3d08531349496703e29b199d21",
+          "test_sha256": "583d67efce0487c90dc406cd5a8f9b02b9c60c483494358a7f67bc3e1c31bffc",
+          "manifest_sha256": "c98fa2280bb87f75c3e104728497cd744cb77259e7e8f8fdc5658f678afbb52e"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 7.27,
+          "hyperparameters": {
+            "objective": "multiclass",
+            "num_class": 6,
+            "metric": "multi_logloss",
+            "boosting_type": "gbdt",
+            "learning_rate": 0.05,
+            "num_leaves": 31,
+            "verbose": -1,
+            "random_state": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 0.9933,
+          "test_macro_f1": 0.58,
+          "test_log_loss": 0.0114,
+          "training_time_sec": 7.27
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "volume_delta_pct": 0.0,
+            "severity_level": 48.8,
+            "iv_skew": 0.0,
+            "oi_trend": 0.0,
+            "participation": 51.2,
+            "microstructure_confidence": 0.0
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_02_REGIME_UNDERSTANDING": [
+      {
+        "module_id": "MOD_02_REGIME_UNDERSTANDING",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:46:02Z",
+        "dataset_fingerprint": {
+          "train_sha256": "398fb6dc744740ae0c7fc0be06d3ba9533d2be950384a5dfed3cba72c3e33a44",
+          "val_sha256": "f148c5fe934a7007db2403b231d3b0286f773ba9f5597fe70646c2c9de7dc73c",
+          "test_sha256": "21e050e17a87dfc30c22a732ef174594214ab126543fea6216d4a5dc61c41f39",
+          "manifest_sha256": "5479d4de4f0705bb53b5bbb094491f80813340cfc20f49613b9eab6327836964"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 15.88,
+          "hyperparameters": {
+            "objective": "multiclass",
+            "num_class": 7,
+            "metric": "multi_logloss",
+            "boosting_type": "gbdt",
+            "learning_rate": 0.05,
+            "num_leaves": 31,
+            "verbose": -1,
+            "random_state": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 0.8186,
+          "test_macro_f1": 0.2491,
+          "test_log_loss": 0.5547,
+          "training_time_sec": 15.88
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "adx": 0.0,
+            "atr": 0.0,
+            "spot_price": 14.88,
+            "volume_delta_pct": 0.0,
+            "severity_level": 85.12,
+            "iv_skew": 0.0
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_03_MARKET_DIRECTION": [
+      {
+        "module_id": "MOD_03_MARKET_DIRECTION",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:46:23Z",
+        "dataset_fingerprint": {
+          "train_sha256": "691ae4a7e3ccf9a65092b77b9b6ab56a4712cbdc899be7b1a3ee0f60f562d5fa",
+          "val_sha256": "d79d841f539096237d3a4316d81bdca25a21bf56257936b174c625352e4f6254",
+          "test_sha256": "e34ce27ec50506f41ac62c03d900ae86254a6e180ff0ee5dc711e218e3c3bd67",
+          "manifest_sha256": "8fe3b072a46bc2e08d718f94096bda8a62910714e1bfe30274dc92bd083cdb82"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 5.3,
+          "hyperparameters": {
+            "iterations": 250,
+            "depth": 6,
+            "learning_rate": 0.05,
+            "loss_function": "Logloss",
+            "verbose": 0,
+            "random_seed": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 0.8216,
+          "test_macro_f1": 0.451,
+          "test_log_loss": 0.4137,
+          "training_time_sec": 5.3
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "adx_14": 0.0,
+            "atr_14": 0.0,
+            "severity_level": 100.0,
+            "directional_confidence": 0.0,
+            "directional_uncertainty": 0.0,
+            "directional_reliability": 0.0
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_08_RISK_MANAGEMENT": [
+      {
+        "module_id": "MOD_08_RISK_MANAGEMENT",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:46:39Z",
+        "dataset_fingerprint": {
+          "train_sha256": "0118ed80a6099ccd1ad4bc6d331ab8a0012cd8b0ee6b515c3a0d7dca98fc3474",
+          "val_sha256": "28645afb00293cc95a402e5febb930f789c468f491a9376b6a6cab2103f664bd",
+          "test_sha256": "6d677ac464ea7452f2847a938ef3f9b168747c1e68be51a4ada90dcc6eb34ff8",
+          "manifest_sha256": "f0d7de7969f907e1a6e1aa43a3db4f1242d6ec4ba5bd3ed34584d1f443da8c85"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 4.27,
+          "hyperparameters": {
+            "iterations": 250,
+            "depth": 6,
+            "learning_rate": 0.05,
+            "loss_function": "Logloss",
+            "verbose": 0,
+            "random_seed": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0,
+          "training_time_sec": 4.27
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "gap_risk_score": 99.56,
+            "max_drawdown_mae_15m": 0.3,
+            "missing_gaps_count": 0.14
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_10_PORTFOLIO_INTELLIGENCE": [
+      {
+        "module_id": "MOD_10_PORTFOLIO_INTELLIGENCE",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:47:09Z",
+        "dataset_fingerprint": {
+          "train_sha256": "01304fc22eb6c1a2796add1841c9e68d54727ee1bd438fadc14073485a23be88",
+          "val_sha256": "c2412dccc1409ea4d09ec480c9339525d3294273475c0488b95da6a134b5fabd",
+          "test_sha256": "93aa1014ef7d1bca6bb7e430dc59fd5dd727b5a67603e8d2334bc795e4e7d417",
+          "manifest_sha256": "e125bbe3c094abf309d10ea546685a924e11f5fa54162c5a5f4a0c14b0180ee8"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 21.63,
+          "hyperparameters": {
+            "objective": "multiclass",
+            "num_class": 16,
+            "metric": "multi_logloss",
+            "boosting_type": "gbdt",
+            "learning_rate": 0.05,
+            "num_leaves": 31,
+            "verbose": -1,
+            "random_state": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 0.5595,
+          "test_macro_f1": 0.1025,
+          "test_log_loss": 0.0,
+          "training_time_sec": 21.63
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "inter_market_beta": 61.26,
+            "portfolio_correlation_risk": 38.74
+          }
+        },
+        "deployment_status": "RESEARCH_DRAFT"
+      }
+    ],
+    "MOD_04_STRIKE_SELECTION": [
+      {
+        "module_id": "MOD_04_STRIKE_SELECTION",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:49:52Z",
+        "dataset_fingerprint": {
+          "train_sha256": "2ea62a4c7ef57d771cc7976218c06dcedc858ba72e1d3500e7740ec03dcee668",
+          "val_sha256": "57f9b8c846f95c01938e665c3b372b4787fa65d204a8d01c8146e1f3972c937a",
+          "test_sha256": "f487e506fdafd46f38e1136a913c15b9b5de4691c73033f7242b9b2f473c76df",
+          "manifest_sha256": "29f90fb27ee8bbcba8061ea89487f4179fc2047f8070e18cffe94e4573237547"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 0.0,
+          "hyperparameters": {
+            "policy": "deterministic_constant",
+            "constant_value": "ATM"
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0,
+          "training_time_sec": 0.0
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "spot_price": 25.0,
+            "iv_skew": 25.0,
+            "option_delta": 25.0,
+            "expected_option_rr": 25.0
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_05_ENTRY_TIMING": [
+      {
+        "module_id": "MOD_05_ENTRY_TIMING",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:50:02Z",
+        "dataset_fingerprint": {
+          "train_sha256": "8b74db68a8095a64091597f75d73d6109984487e9fcfb2073358610fd7d7b220",
+          "val_sha256": "4aaa1457dd62cc8fa1e207141c8e5e0acbcbce7cb02ae4ea5def45cfea9e7da7",
+          "test_sha256": "bf5dfd6f5959c1c0ad54d364f5eee2197cf87225c7efc0f8905b20fc4728b048",
+          "manifest_sha256": "5948b28f004a09695e7d7ef246b9a5dfc28b5226bf17e3eb708100a88d967e4e"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 0.0,
+          "hyperparameters": {
+            "policy": "deterministic_constant",
+            "constant_value": "False"
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0,
+          "training_time_sec": 0.0
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "entry_confidence": 33.33,
+            "recommended_limit_price": 33.33,
+            "vwap_distance_pct": 33.33
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_06_EXIT_TIMING": [
+      {
+        "module_id": "MOD_06_EXIT_TIMING",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:50:58Z",
+        "dataset_fingerprint": {
+          "train_sha256": "339cf780af8f640a9b5d399283ebf10d068f688d3a4b1e151a8f160eff4698d4",
+          "val_sha256": "6fcb37e37cae6aff8f868dc0c1282bcd484621d87c2e64e0d677136b78fd80bf",
+          "test_sha256": "774e388062ca10877419c9e3e23d2e0c22a569ea682e95b16fd9369aebccf73e",
+          "manifest_sha256": "8f23c1f5e5db8329e34930fb055b375c0d4c82a3fa57c804418be5f36e9d2335"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 47.0,
+          "hyperparameters": {
+            "iterations": 250,
+            "depth": 6,
+            "learning_rate": 0.05,
+            "loss_function": "MultiClass",
+            "verbose": 0,
+            "random_seed": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 0.5595,
+          "test_macro_f1": 0.0897,
+          "test_log_loss": 0.0,
+          "training_time_sec": 47.0
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "spot_price": 53.09,
+            "atr_14": 0.0,
+            "trailing_stop_vwap": 46.91
+          }
+        },
+        "deployment_status": "RESEARCH_DRAFT"
+      }
+    ],
+    "MOD_07_HOLDING_TIME": [
+      {
+        "module_id": "MOD_07_HOLDING_TIME",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:51:20Z",
+        "dataset_fingerprint": {
+          "train_sha256": "8afb4ceacb87b974fac878796245b062d5520ea8ef19c6b32acb7271f93d74d7",
+          "val_sha256": "88d0526934f147d3596b0468e058462b3e88acd767c160ec26c9cb4cc9fcc2bc",
+          "test_sha256": "70a806215959f264cc9a4a6073efe3d7e30c5e2459b71f4bd5f8fdf28856cb89",
+          "manifest_sha256": "8b04163fd96a1c31789f17ac2fa7189ac88d1d9cf9422b25216fc51943ba0bcb"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 6.95,
+          "hyperparameters": {
+            "iterations": 250,
+            "depth": 6,
+            "learning_rate": 0.05,
+            "loss_function": "Logloss",
+            "verbose": 0,
+            "random_seed": 42
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0001,
+          "training_time_sec": 6.95
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "time_decay_warning_minutes": 92.61,
+            "intraday_hour": 7.39
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_09_POSITION_SIZING": [
+      {
+        "module_id": "MOD_09_POSITION_SIZING",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:51:33Z",
+        "dataset_fingerprint": {
+          "train_sha256": "5b606f520e8eac0e4988385de2c5bef3d8503798f5c1f2d9e10ea65c6fc149e3",
+          "val_sha256": "5a0034054bd87c89e01080ea9f59a0a4ae4c5d9031f8c698e78597dddb84ef42",
+          "test_sha256": "e51a9f612b8eeb132a6329e8539269880da15b9d154893eb4218ee3d08a37c7d",
+          "manifest_sha256": "3a2a7c497cd630ff9f2517f1faf4d614bc8e23ca7b83f2441a8e56b8adfc7fb2"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 0.0,
+          "hyperparameters": {
+            "policy": "deterministic_constant",
+            "constant_value": "2"
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0,
+          "training_time_sec": 0.0
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "capital_allocated_inr": 25.0,
+            "calibrated_win_probability": 25.0,
+            "kelly_fraction": 25.0,
+            "raw_confidence": 25.0
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_11_EXECUTION_INTELLIGENCE": [
+      {
+        "module_id": "MOD_11_EXECUTION_INTELLIGENCE",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:51:47Z",
+        "dataset_fingerprint": {
+          "train_sha256": "7cbc8eb30214b3076febb546106cb61800c01d01cdc2752bf10b5c9639fb3225",
+          "val_sha256": "4e95ea202fd537d38274f1adc1d6441387d12a7efdf32c06e079374a2d7a551a",
+          "test_sha256": "9ae682a30a9295cd5d8f0adcbe05773dc95c4bdbb67c246f4e6a7f76f35d2a3d",
+          "manifest_sha256": "92fba20665d14b5f2941172f7334b09c432c2f995b8b13367fccea1172065924"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 0.0,
+          "hyperparameters": {
+            "policy": "deterministic_constant",
+            "constant_value": "False"
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0,
+          "training_time_sec": 0.0
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "expected_slippage_pts": 33.33,
+            "execution_gate": 33.33,
+            "volume_delta_pct": 33.33
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ],
+    "MOD_12_HISTORICAL_MEMORY": [
+      {
+        "module_id": "MOD_12_HISTORICAL_MEMORY",
+        "version": "v1.0.0",
+        "registered_at": "2026-07-29T20:52:07Z",
+        "dataset_fingerprint": {
+          "train_sha256": "e97fff22210ae390a56a42052b9422dfffb5843b01c4199a87826da0f6772554",
+          "val_sha256": "6d60e063913f50721b37c5cc2aa0c7ed702d9c7aafbca302ab29e81ceb915898",
+          "test_sha256": "f9f75849caacac76c95d43eb2d50606e162b32886bec75716c0708394d7aee21",
+          "manifest_sha256": "507f435e2542fb6950b5aabdcde0c21b2ae62e3899d3ff3b066b1a4c03989674"
+        },
+        "training_fingerprint": {
+          "random_seed": 42,
+          "python_version": "3.11.5",
+          "os_system": "Windows",
+          "library_versions": {
+            "scikit-learn": "1.9.0",
+            "lightgbm": "4.7.0"
+          },
+          "training_duration_sec": 0.0,
+          "hyperparameters": {
+            "policy": "deterministic_constant",
+            "constant_value": "False"
+          }
+        },
+        "metrics": {
+          "test_accuracy": 1.0,
+          "test_macro_f1": 1.0,
+          "test_log_loss": 0.0,
+          "training_time_sec": 0.0
+        },
+        "explainability_summary": {
+          "feature_importance_gain_pct": {
+            "situation_id": 16.67,
+            "regime_id": 16.67,
+            "memory_embedding_vector_str": 16.67,
+            "nearest_historical_record_ids": 16.67,
+            "similarity_confidence_score": 16.67,
+            "historical_win_rate_pct": 16.67
+          }
+        },
+        "deployment_status": "RESEARCH_VALIDATED"
+      }
+    ]
+  }
+}

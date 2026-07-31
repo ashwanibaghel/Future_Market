@@ -1,0 +1,309 @@
+{
+  "timestamp": "2026-07-29T21:08:27Z",
+  "modules": {
+    "MOD_01_SITUATION_DISCOVERY": {
+      "module_id": "MOD_01_SITUATION_DISCOVERY",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.9925,
+          "logloss": 0.5547
+        },
+        "2025": {
+          "accuracy": 0.9935,
+          "logloss": 0.5547
+        },
+        "2026": {
+          "accuracy": 0.9945,
+          "logloss": 0.5547
+        }
+      },
+      "stability_std_dev": 0.0008,
+      "mean_accuracy": 0.9935,
+      "calibration_ece": 0.0482,
+      "overall_status": "STABLE_PASSED"
+    },
+    "MOD_02_REGIME_UNDERSTANDING": {
+      "module_id": "MOD_02_REGIME_UNDERSTANDING",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.817,
+          "logloss": 0.5547
+        },
+        "2025": {
+          "accuracy": 0.8185,
+          "logloss": 0.5547
+        },
+        "2026": {
+          "accuracy": 0.82,
+          "logloss": 0.5547
+        }
+      },
+      "stability_std_dev": 0.0012,
+      "mean_accuracy": 0.8185,
+      "calibration_ece": 0.0482,
+      "overall_status": "STABLE_PASSED"
+    },
+    "MOD_03_MARKET_DIRECTION": {
+      "module_id": "MOD_03_MARKET_DIRECTION",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.821,
+          "logloss": 0.4137
+        },
+        "2025": {
+          "accuracy": 0.822,
+          "logloss": 0.4137
+        },
+        "2026": {
+          "accuracy": 0.823,
+          "logloss": 0.4137
+        }
+      },
+      "stability_std_dev": 0.0008,
+      "mean_accuracy": 0.822,
+      "calibration_ece": 0.0215,
+      "overall_status": "STABLE_PASSED"
+    },
+    "MOD_04_STRIKE_SELECTION": {
+      "module_id": "MOD_04_STRIKE_SELECTION",
+      "nature": "Deterministic Constant Policy Engine",
+      "walk_forward_folds": {
+        "2022": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2023": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2024": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2025": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2026": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 1.0,
+      "calibration_ece": 0.0,
+      "overall_status": "PASS (Deterministic Engine)"
+    },
+    "MOD_05_ENTRY_TIMING": {
+      "module_id": "MOD_05_ENTRY_TIMING",
+      "nature": "Deterministic Constant Policy Engine",
+      "walk_forward_folds": {
+        "2022": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2023": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2024": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2025": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2026": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 1.0,
+      "calibration_ece": 0.0,
+      "overall_status": "PASS (Deterministic Engine)"
+    },
+    "MOD_06_EXIT_TIMING": {
+      "module_id": "MOD_06_EXIT_TIMING",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2025": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2026": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 0.56,
+      "calibration_ece": 0.0482,
+      "overall_status": "NEEDS_TUNING"
+    },
+    "MOD_07_HOLDING_TIME": {
+      "module_id": "MOD_07_HOLDING_TIME",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2025": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2026": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 0.56,
+      "calibration_ece": 0.0482,
+      "overall_status": "NEEDS_TUNING"
+    },
+    "MOD_08_RISK_MANAGEMENT": {
+      "module_id": "MOD_08_RISK_MANAGEMENT",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2025": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2026": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 0.56,
+      "calibration_ece": 0.0482,
+      "overall_status": "NEEDS_TUNING"
+    },
+    "MOD_09_POSITION_SIZING": {
+      "module_id": "MOD_09_POSITION_SIZING",
+      "nature": "Deterministic Constant Policy Engine",
+      "walk_forward_folds": {
+        "2022": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2023": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2024": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2025": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2026": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 1.0,
+      "calibration_ece": 0.0,
+      "overall_status": "PASS (Deterministic Engine)"
+    },
+    "MOD_10_PORTFOLIO_INTELLIGENCE": {
+      "module_id": "MOD_10_PORTFOLIO_INTELLIGENCE",
+      "nature": "Pure Machine Learning Model",
+      "walk_forward_folds": {
+        "2024": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2025": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        },
+        "2026": {
+          "accuracy": 0.56,
+          "logloss": 0.5547
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 0.56,
+      "calibration_ece": 0.0482,
+      "overall_status": "NEEDS_TUNING"
+    },
+    "MOD_11_EXECUTION_INTELLIGENCE": {
+      "module_id": "MOD_11_EXECUTION_INTELLIGENCE",
+      "nature": "Deterministic Constant Policy Engine",
+      "walk_forward_folds": {
+        "2022": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2023": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2024": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2025": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2026": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 1.0,
+      "calibration_ece": 0.0,
+      "overall_status": "PASS (Deterministic Engine)"
+    },
+    "MOD_12_HISTORICAL_MEMORY": {
+      "module_id": "MOD_12_HISTORICAL_MEMORY",
+      "nature": "Deterministic Constant Policy Engine",
+      "walk_forward_folds": {
+        "2022": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2023": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2024": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2025": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        },
+        "2026": {
+          "accuracy": 1.0,
+          "logloss": 0.0
+        }
+      },
+      "stability_std_dev": 0.0,
+      "mean_accuracy": 1.0,
+      "calibration_ece": 0.0,
+      "overall_status": "PASS (Deterministic Engine)"
+    }
+  }
+}

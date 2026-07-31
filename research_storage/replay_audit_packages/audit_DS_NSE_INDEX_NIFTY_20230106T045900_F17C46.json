@@ -1,0 +1,11 @@
+{
+  "decision_id": "DS_NSE_INDEX_NIFTY_20230106T045900_F17C46",
+  "reasoning_id": "REASON_NSE_INDEX_NIFTY_20230106T045900_85FEA3",
+  "synthesis_id": "SYN_NSE_INDEX_NIFTY_20230106T045900_2ED526",
+  "situation_id": "SIT_LEVEL_BREACH_EXPANSION",
+  "snapshot_timestamp": "2023-01-06T04:59:00Z",
+  "software_version": "v1.0-phase1-freeze",
+  "constitution_version": "v1.0",
+  "pipeline_version": "v1.0",
+  "slogan": "Explain every assessment with evidence, uncertainty, and traceability."
+}

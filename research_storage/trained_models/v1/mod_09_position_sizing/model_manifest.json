@@ -1,0 +1,41 @@
+{
+  "module_id": "MOD_09_POSITION_SIZING",
+  "module_name": "MOD_09_POSITION_SIZING",
+  "layer_name": "layer_4_execution",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:51:33Z",
+  "schema_version": "2.0",
+  "model_filename": "model.constant",
+  "dataset_fingerprint": {
+    "train_sha256": "5b606f520e8eac0e4988385de2c5bef3d8503798f5c1f2d9e10ea65c6fc149e3",
+    "val_sha256": "5a0034054bd87c89e01080ea9f59a0a4ae4c5d9031f8c698e78597dddb84ef42",
+    "test_sha256": "e51a9f612b8eeb132a6329e8539269880da15b9d154893eb4218ee3d08a37c7d",
+    "manifest_sha256": "3a2a7c497cd630ff9f2517f1faf4d614bc8e23ca7b83f2441a8e56b8adfc7fb2"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 0.0,
+    "hyperparameters": {
+      "policy": "deterministic_constant",
+      "constant_value": "2"
+    }
+  },
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "test_log_loss": 0.0,
+    "training_time_sec": 0.0
+  },
+  "feature_importance": {
+    "capital_allocated_inr": 25.0,
+    "calibrated_win_probability": 25.0,
+    "kelly_fraction": 25.0,
+    "raw_confidence": 25.0
+  }
+}

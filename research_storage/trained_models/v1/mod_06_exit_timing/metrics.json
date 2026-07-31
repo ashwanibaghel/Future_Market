@@ -1,0 +1,6 @@
+{
+  "test_accuracy": 0.5595,
+  "test_macro_f1": 0.0897,
+  "test_log_loss": 0.0,
+  "training_time_sec": 47.0
+}

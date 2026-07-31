@@ -25,6 +25,12 @@ const NAV_ITEMS = [
     description: "Live market overview",
   },
   {
+    href: "/paper-trading",
+    label: "Paper Trading",
+    icon: Activity,
+    description: "AI Trader Control Room",
+  },
+  {
     href: "/option-chain",
     label: "Option Chain",
     icon: TableProperties,

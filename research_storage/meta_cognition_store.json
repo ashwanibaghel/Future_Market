@@ -1,0 +1,159 @@
+{
+  "version": "v1.0.0",
+  "total_assessments_evaluated": 4,
+  "modules": {
+    "MOD_01_SITUATION_DISCOVERY": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 3.18,
+      "rolling_accuracy_25k": 0.99,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 1.0,
+      "calibration_status": "PRELIMINARY (N=1/100)",
+      "total_correct": 4,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0,
+      "reliability_weight": 1.0,
+      "predicted_failure_rate": 0.0,
+      "sample_count": 1
+    },
+    "MOD_02_REGIME_UNDERSTANDING": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 1.0,
+      "rolling_accuracy_25k": 0.82,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 1.0,
+      "calibration_status": "UNDERCONFIDENT",
+      "total_correct": 1,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_03_MARKET_DIRECTION": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 3.18,
+      "rolling_accuracy_25k": 0.82,
+      "claimed_confidence_avg": 0.85,
+      "actual_accuracy_avg": 1.0,
+      "calibration_status": "PRELIMINARY (N=1/100)",
+      "total_correct": 4,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0,
+      "reliability_weight": 1.0,
+      "predicted_failure_rate": 0.0,
+      "sample_count": 1
+    },
+    "MOD_04_STRIKE_SELECTION": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_05_ENTRY_TIMING": {
+      "reliability_score": 0.99,
+      "lifetime_reward_score": -17.18,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.0,
+      "calibration_status": "PRELIMINARY (N=1/100)",
+      "total_correct": 0,
+      "total_wrong": 4,
+      "attribution_penalty_count": 1,
+      "reliability_weight": 0.8488,
+      "predicted_failure_rate": 1.0,
+      "sample_count": 1
+    },
+    "MOD_06_EXIT_TIMING": {
+      "reliability_score": 0.99,
+      "lifetime_reward_score": -15.42,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.0,
+      "calibration_status": "OVERCONFIDENT",
+      "total_correct": 0,
+      "total_wrong": 3,
+      "attribution_penalty_count": 1,
+      "reliability_weight": 0.8935,
+      "predicted_failure_rate": 1.0
+    },
+    "MOD_07_HOLDING_TIME": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_08_RISK_MANAGEMENT": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.9,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_09_POSITION_SIZING": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_10_PORTFOLIO_INTELLIGENCE": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_11_EXECUTION_INTELLIGENCE": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    },
+    "MOD_12_HISTORICAL_MEMORY": {
+      "reliability_score": 1.0,
+      "lifetime_reward_score": 0.0,
+      "rolling_accuracy_25k": 0.56,
+      "claimed_confidence_avg": 0.65,
+      "actual_accuracy_avg": 0.56,
+      "calibration_status": "WELL_CALIBRATED",
+      "total_correct": 0,
+      "total_wrong": 0,
+      "attribution_penalty_count": 0
+    }
+  },
+  "failure_taxonomy_counts": {
+    "ENTRY_ERROR": 2,
+    "EXIT_ERROR": 2,
+    "REGIME_ERROR": 0,
+    "DIRECTION_ERROR": 0,
+    "VOLATILITY_ERROR": 0,
+    "RISK_ERROR": 0,
+    "DATA_ERROR": 0,
+    "UNKNOWN": 0
+  }
+}

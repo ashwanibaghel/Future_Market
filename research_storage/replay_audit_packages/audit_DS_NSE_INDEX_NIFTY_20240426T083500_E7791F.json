@@ -1,0 +1,11 @@
+{
+  "decision_id": "DS_NSE_INDEX_NIFTY_20240426T083500_E7791F",
+  "reasoning_id": "REASON_NSE_INDEX_NIFTY_20240426T083500_5500B4",
+  "synthesis_id": "SYN_NSE_INDEX_NIFTY_20240426T083500_80F4AD",
+  "situation_id": "SIT_CONSOLIDATION_COMPRESSION",
+  "snapshot_timestamp": "2024-04-26T08:35:00Z",
+  "software_version": "v1.0-phase1-freeze",
+  "constitution_version": "v1.0",
+  "pipeline_version": "v1.0",
+  "slogan": "Explain every assessment with evidence, uncertainty, and traceability."
+}

@@ -1,0 +1,552 @@
+{
+  "title": "STEP 4 \u2014 Market Intelligence Knowledge Discovery Summary",
+  "evidence_dataset_version": "v1.0-evidence",
+  "total_evidence_records_mined": 976568,
+  "total_knowledge_entries_registered": 52,
+  "top_situations": [
+    {
+      "situation_id": "SIT_CONSOLIDATION_COMPRESSION",
+      "count": 635988,
+      "pct": 65.12
+    },
+    {
+      "situation_id": "SIT_LEVEL_BREACH_EXPANSION",
+      "count": 312173,
+      "pct": 31.97
+    },
+    {
+      "situation_id": "SIT_ACCUMULATION_BEHAVIOUR",
+      "count": 11465,
+      "pct": 1.17
+    },
+    {
+      "situation_id": "SIT_DISTRIBUTION_BEHAVIOUR",
+      "count": 9135,
+      "pct": 0.94
+    },
+    {
+      "situation_id": "SIT_LONG_LIQUIDATION_PRESSURE",
+      "count": 4027,
+      "pct": 0.41
+    }
+  ],
+  "top_unknown_gap_risks": [
+    {
+      "gap_name": "Live Order Book Delta",
+      "failure_rate_pct": 18.86,
+      "occurrences": 976568
+    },
+    {
+      "gap_name": "Implied Volatility surge confirmation inconclusive.",
+      "failure_rate_pct": 53.79,
+      "occurrences": 310223
+    },
+    {
+      "gap_name": "Volatility expansion confirmation unavailable.",
+      "failure_rate_pct": 94.59,
+      "occurrences": 11302
+    },
+    {
+      "gap_name": "Call Wall breach unconfirmed.",
+      "failure_rate_pct": 94.32,
+      "occurrences": 10069
+    },
+    {
+      "gap_name": "Fresh short seller volume confirmation unavailable.",
+      "failure_rate_pct": 100.0,
+      "occurrences": 4027
+    }
+  ],
+  "top_contradiction_clusters": [
+    {
+      "cluster_name": "ORDER_BOOK_VACUUM_REVERSAL",
+      "failure_rate_pct": 54.1,
+      "occurrences": 339961
+    },
+    {
+      "cluster_name": "PCR_COLLAPSE_BELOW_THRESHOLD",
+      "failure_rate_pct": 48.89,
+      "occurrences": 497
+    },
+    {
+      "cluster_name": "NONE",
+      "failure_rate_pct": 1.99,
+      "occurrences": 151
+    },
+    {
+      "cluster_name": "LOW_INSTITUTIONAL_VOLUME",
+      "failure_rate_pct": 0.0,
+      "occurrences": 635959
+    }
+  ],
+  "top_100_knowledge_insights": [
+    {
+      "knowledge_id": "KNOW_000031",
+      "title": "Outcome Distribution for horizon_5m",
+      "hypothesis": "Across 5-year timeline, horizon horizon_5m exhibits median MFE of +0.07% vs median MAE of -0.03%.",
+      "confidence_pct": 95.0,
+      "samples_n": 976568,
+      "status": "Supported",
+      "quality_score": 93.75
+    },
+    {
+      "knowledge_id": "KNOW_000032",
+      "title": "Outcome Distribution for horizon_15m",
+      "hypothesis": "Across 5-year timeline, horizon horizon_15m exhibits median MFE of +0.07% vs median MAE of -0.17%.",
+      "confidence_pct": 95.0,
+      "samples_n": 976568,
+      "status": "Supported",
+      "quality_score": 93.75
+    },
+    {
+      "knowledge_id": "KNOW_000033",
+      "title": "Outcome Distribution for horizon_30m",
+      "hypothesis": "Across 5-year timeline, horizon horizon_30m exhibits median MFE of +0.07% vs median MAE of -0.17%.",
+      "confidence_pct": 95.0,
+      "samples_n": 976568,
+      "status": "Supported",
+      "quality_score": 93.75
+    },
+    {
+      "knowledge_id": "KNOW_000034",
+      "title": "Outcome Distribution for horizon_60m",
+      "hypothesis": "Across 5-year timeline, horizon horizon_60m exhibits median MFE of +0.07% vs median MAE of -0.69%.",
+      "confidence_pct": 95.0,
+      "samples_n": 976568,
+      "status": "Supported",
+      "quality_score": 93.75
+    },
+    {
+      "knowledge_id": "KNOW_000035",
+      "title": "Outcome Distribution for horizon_eod",
+      "hypothesis": "Across 5-year timeline, horizon horizon_eod exhibits median MFE of +2.88% vs median MAE of -1.82%.",
+      "confidence_pct": 95.0,
+      "samples_n": 976568,
+      "status": "Supported",
+      "quality_score": 93.75
+    },
+    {
+      "knowledge_id": "KNOW_000036",
+      "title": "Outcome Distribution for horizon_next_day",
+      "hypothesis": "Across 5-year timeline, horizon horizon_next_day exhibits median MFE of +2.88% vs median MAE of -1.82%.",
+      "confidence_pct": 95.0,
+      "samples_n": 976568,
+      "status": "Supported",
+      "quality_score": 93.75
+    },
+    {
+      "knowledge_id": "KNOW_000001",
+      "title": "Situation Prevalence: SIT_CONSOLIDATION_COMPRESSION",
+      "hypothesis": "Market operates in SIT_CONSOLIDATION_COMPRESSION for 65.125% of historical duration.",
+      "confidence_pct": 98.03,
+      "samples_n": 635988,
+      "status": "Supported",
+      "quality_score": 87.92
+    },
+    {
+      "knowledge_id": "KNOW_000002",
+      "title": "Situation Prevalence: SIT_LEVEL_BREACH_EXPANSION",
+      "hypothesis": "Market operates in SIT_LEVEL_BREACH_EXPANSION for 31.966% of historical duration.",
+      "confidence_pct": 91.39,
+      "samples_n": 312173,
+      "status": "Supported",
+      "quality_score": 80.96
+    },
+    {
+      "knowledge_id": "KNOW_000022",
+      "title": "Contradiction Cluster: ORDER_BOOK_VACUUM_REVERSAL",
+      "hypothesis": "Contradiction cluster 'ORDER_BOOK_VACUUM_REVERSAL' exhibits 54.1% failure rate, triggered by 'Sudden liquidity vacuum displacement triggered sharp counter-reversal.'.",
+      "confidence_pct": 54.1,
+      "samples_n": 183902,
+      "status": "Refuted (Failure Cluster)",
+      "quality_score": 79.9
+    },
+    {
+      "knowledge_id": "KNOW_000023",
+      "title": "Contradiction Cluster: LOW_INSTITUTIONAL_VOLUME",
+      "hypothesis": "Contradiction cluster 'LOW_INSTITUTIONAL_VOLUME' exhibits 0.0% failure rate, triggered by 'Breakout stalled due to thin institutional volume participation.'.",
+      "confidence_pct": 0.0,
+      "samples_n": 0,
+      "status": "Supported (Recovery Cluster)",
+      "quality_score": 79.9
+    },
+    {
+      "knowledge_id": "KNOW_000012",
+      "title": "Gap Impact: Implied Volatility surge confirmation inconclusive.",
+      "hypothesis": "Missing information 'Implied Volatility surge confirmation inconclusive.' results in 53.79% failure probability under regime DOWNWARD_PRESSURE|EXPANDING|EXPANSION_BREAKOUT.",
+      "confidence_pct": 53.79,
+      "samples_n": 166868,
+      "status": "Refuted (High-Risk Gap)",
+      "quality_score": 79.3
+    },
+    {
+      "knowledge_id": "KNOW_000013",
+      "title": "Gap Impact: Live Order Book Delta",
+      "hypothesis": "Missing information 'Live Order Book Delta' results in 18.86% failure probability under regime SIDEWAYS_FLAT|COMPRESSING|RANGE_COMPRESSION.",
+      "confidence_pct": 18.86,
+      "samples_n": 184148,
+      "status": "Supported (Tolerable Gap)",
+      "quality_score": 79.3
+    },
+    {
+      "knowledge_id": "KNOW_000015",
+      "title": "Gap Impact: Volatility expansion confirmation unavailable.",
+      "hypothesis": "Missing information 'Volatility expansion confirmation unavailable.' results in 94.59% failure probability under regime UPWARD_DRIFT|STABLE|ACCUMULATION.",
+      "confidence_pct": 94.59,
+      "samples_n": 10690,
+      "status": "Refuted (High-Risk Gap)",
+      "quality_score": 79.3
+    },
+    {
+      "knowledge_id": "KNOW_000016",
+      "title": "Gap Impact: Directional breakout trigger unconfirmed.",
+      "hypothesis": "Missing information 'Directional breakout trigger unconfirmed.' results in 0.0% failure probability under regime SIDEWAYS_FLAT|COMPRESSING|RANGE_COMPRESSION.",
+      "confidence_pct": 0.0,
+      "samples_n": 0,
+      "status": "Supported (Tolerable Gap)",
+      "quality_score": 79.3
+    },
+    {
+      "knowledge_id": "KNOW_000018",
+      "title": "Gap Impact: Call Wall breach unconfirmed.",
+      "hypothesis": "Missing information 'Call Wall breach unconfirmed.' results in 94.32% failure probability under regime UPWARD_DRIFT|STABLE|ACCUMULATION.",
+      "confidence_pct": 94.32,
+      "samples_n": 9497,
+      "status": "Refuted (High-Risk Gap)",
+      "quality_score": 79.3
+    },
+    {
+      "knowledge_id": "KNOW_000048",
+      "title": "Cross-Symbol Behavior: SIT_CONSOLIDATION_COMPRESSION",
+      "hypothesis": "Situation SIT_CONSOLIDATION_COMPRESSION is present in NIFTY (363,007) and BANKNIFTY (272,981), indicating transferable dynamics.",
+      "confidence_pct": 75.2,
+      "samples_n": 635988,
+      "status": "Supported (Shared Pattern)",
+      "quality_score": 79.15
+    },
+    {
+      "knowledge_id": "KNOW_000050",
+      "title": "Cross-Symbol Behavior: SIT_LEVEL_BREACH_EXPANSION",
+      "hypothesis": "Situation SIT_LEVEL_BREACH_EXPANSION is present in NIFTY (138,899) and BANKNIFTY (173,274), indicating transferable dynamics.",
+      "confidence_pct": 80.16,
+      "samples_n": 312173,
+      "status": "Supported (Shared Pattern)",
+      "quality_score": 79.15
+    },
+    {
+      "knowledge_id": "KNOW_000038",
+      "title": "Hourly Seasonality: 04:00",
+      "hypothesis": "Trading hour 04:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (64.1% frequency).",
+      "confidence_pct": 64.06,
+      "samples_n": 99613,
+      "status": "Supported",
+      "quality_score": 77.9
+    },
+    {
+      "knowledge_id": "KNOW_000039",
+      "title": "Hourly Seasonality: 05:00",
+      "hypothesis": "Trading hour 05:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (65.7% frequency).",
+      "confidence_pct": 65.73,
+      "samples_n": 102622,
+      "status": "Supported",
+      "quality_score": 77.9
+    },
+    {
+      "knowledge_id": "KNOW_000040",
+      "title": "Hourly Seasonality: 06:00",
+      "hypothesis": "Trading hour 06:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (65.9% frequency).",
+      "confidence_pct": 65.93,
+      "samples_n": 103008,
+      "status": "Supported",
+      "quality_score": 77.9
+    },
+    {
+      "knowledge_id": "KNOW_000041",
+      "title": "Hourly Seasonality: 07:00",
+      "hypothesis": "Trading hour 07:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (65.4% frequency).",
+      "confidence_pct": 65.37,
+      "samples_n": 102055,
+      "status": "Supported",
+      "quality_score": 77.9
+    },
+    {
+      "knowledge_id": "KNOW_000042",
+      "title": "Hourly Seasonality: 08:00",
+      "hypothesis": "Trading hour 08:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (65.3% frequency).",
+      "confidence_pct": 65.29,
+      "samples_n": 101984,
+      "status": "Supported",
+      "quality_score": 77.9
+    },
+    {
+      "knowledge_id": "KNOW_000043",
+      "title": "Hourly Seasonality: 09:00",
+      "hypothesis": "Trading hour 09:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (65.6% frequency).",
+      "confidence_pct": 65.56,
+      "samples_n": 102432,
+      "status": "Supported",
+      "quality_score": 77.9
+    },
+    {
+      "knowledge_id": "KNOW_000024",
+      "title": "Regime Outcome: UPWARD_DRIFT|EXPANDING|HIGH_INSTITUTIONAL|EXPANSION_BREAKOUT|Sev4 in SIT_LEVEL_BREACH_EXPANSION",
+      "hypothesis": "Regime 'UPWARD_DRIFT|EXPANDING|HIGH_INSTITUTIONAL|EXPANSION_BREAKOUT|Sev4' combined with situation 'SIT_LEVEL_BREACH_EXPANSION' yields UPWARD bias with 96.23% confidence.",
+      "confidence_pct": 96.23,
+      "samples_n": 137406,
+      "status": "Supported (High-Probability Regime)",
+      "quality_score": 76.75
+    },
+    {
+      "knowledge_id": "KNOW_000027",
+      "title": "Regime Outcome: SIDEWAYS_FLAT|COMPRESSING|THIN_FLOW|RANGE_COMPRESSION|Sev3 in SIT_CONSOLIDATION_COMPRESSION",
+      "hypothesis": "Regime 'SIDEWAYS_FLAT|COMPRESSING|THIN_FLOW|RANGE_COMPRESSION|Sev3' combined with situation 'SIT_CONSOLIDATION_COMPRESSION' yields UPWARD bias with 92.7% confidence.",
+      "confidence_pct": 92.7,
+      "samples_n": 589543,
+      "status": "Supported (High-Probability Regime)",
+      "quality_score": 76.75
+    },
+    {
+      "knowledge_id": "KNOW_000030",
+      "title": "Regime Outcome: DOWNWARD_PRESSURE|EXPANDING|HIGH_INSTITUTIONAL|EXPANSION_BREAKOUT|Sev4 in SIT_LEVEL_BREACH_EXPANSION",
+      "hypothesis": "Regime 'DOWNWARD_PRESSURE|EXPANDING|HIGH_INSTITUTIONAL|EXPANSION_BREAKOUT|Sev4' combined with situation 'SIT_LEVEL_BREACH_EXPANSION' yields DOWNWARD bias with 99.35% confidence.",
+      "confidence_pct": 99.35,
+      "samples_n": 168288,
+      "status": "Supported (High-Probability Regime)",
+      "quality_score": 76.75
+    },
+    {
+      "knowledge_id": "KNOW_000003",
+      "title": "Situation Prevalence: SIT_ACCUMULATION_BEHAVIOUR",
+      "hypothesis": "Market operates in SIT_ACCUMULATION_BEHAVIOUR for 1.174% of historical duration.",
+      "confidence_pct": 85.23,
+      "samples_n": 11465,
+      "status": "Supported",
+      "quality_score": 74.5
+    },
+    {
+      "knowledge_id": "KNOW_000004",
+      "title": "Situation Prevalence: SIT_DISTRIBUTION_BEHAVIOUR",
+      "hypothesis": "Market operates in SIT_DISTRIBUTION_BEHAVIOUR for 0.935% of historical duration.",
+      "confidence_pct": 85.19,
+      "samples_n": 9135,
+      "status": "Supported",
+      "quality_score": 74.45
+    },
+    {
+      "knowledge_id": "KNOW_000014",
+      "title": "Gap Impact: Put Floor breach unconfirmed.",
+      "hypothesis": "Missing information 'Put Floor breach unconfirmed.' results in 7.66% failure probability under regime DOWNWARD_PRESSURE|STABLE|DISTRIBUTION.",
+      "confidence_pct": 7.66,
+      "samples_n": 562,
+      "status": "Supported (Tolerable Gap)",
+      "quality_score": 73.9
+    },
+    {
+      "knowledge_id": "KNOW_000005",
+      "title": "Situation Prevalence: SIT_LONG_LIQUIDATION_PRESSURE",
+      "hypothesis": "Market operates in SIT_LONG_LIQUIDATION_PRESSURE for 0.412% of historical duration.",
+      "confidence_pct": 85.08,
+      "samples_n": 4027,
+      "status": "Supported",
+      "quality_score": 70.72
+    },
+    {
+      "knowledge_id": "KNOW_000006",
+      "title": "Situation Prevalence: SIT_SHORT_COVERING_MOMENTUM",
+      "hypothesis": "Market operates in SIT_SHORT_COVERING_MOMENTUM for 0.387% of historical duration.",
+      "confidence_pct": 85.08,
+      "samples_n": 3780,
+      "status": "Supported",
+      "quality_score": 69.48
+    },
+    {
+      "knowledge_id": "KNOW_000017",
+      "title": "Gap Impact: Fresh short seller volume confirmation unavailable.",
+      "hypothesis": "Missing information 'Fresh short seller volume confirmation unavailable.' results in 100.0% failure probability under regime DOWNWARD_PRESSURE|EXPANDING|TRENDING.",
+      "confidence_pct": 100.0,
+      "samples_n": 4027,
+      "status": "Refuted (High-Risk Gap)",
+      "quality_score": 65.62
+    },
+    {
+      "knowledge_id": "KNOW_000019",
+      "title": "Gap Impact: New buyer volume confirmation unavailable.",
+      "hypothesis": "Missing information 'New buyer volume confirmation unavailable.' results in 10.5% failure probability under regime UPWARD_DRIFT|EXPANDING|TRENDING.",
+      "confidence_pct": 10.5,
+      "samples_n": 397,
+      "status": "Supported (Tolerable Gap)",
+      "quality_score": 65.0
+    },
+    {
+      "knowledge_id": "KNOW_000008",
+      "title": "Confidence Range 20%-30% Calibration",
+      "hypothesis": "Engine confidence in range 20%-30% predicts 84.95% 5m positive outcomes.",
+      "confidence_pct": 84.95,
+      "samples_n": 54938,
+      "status": "Refuted (Misleading/Uncalibrated)",
+      "quality_score": 64.75
+    },
+    {
+      "knowledge_id": "KNOW_000009",
+      "title": "Confidence Range 30%-40% Calibration",
+      "hypothesis": "Engine confidence in range 30%-40% predicts 81.3% 5m positive outcomes.",
+      "confidence_pct": 81.3,
+      "samples_n": 735703,
+      "status": "Refuted (Misleading/Uncalibrated)",
+      "quality_score": 64.75
+    },
+    {
+      "knowledge_id": "KNOW_000025",
+      "title": "Regime Outcome: DOWNWARD_PRESSURE|STABLE|HIGH_INSTITUTIONAL|DISTRIBUTION|Sev3 in SIT_DISTRIBUTION_BEHAVIOUR",
+      "hypothesis": "Regime 'DOWNWARD_PRESSURE|STABLE|HIGH_INSTITUTIONAL|DISTRIBUTION|Sev3' combined with situation 'SIT_DISTRIBUTION_BEHAVIOUR' yields DOWNWARD bias with 93.62% confidence.",
+      "confidence_pct": 93.62,
+      "samples_n": 8552,
+      "status": "Supported (High-Probability Regime)",
+      "quality_score": 64.42
+    },
+    {
+      "knowledge_id": "KNOW_000037",
+      "title": "Hourly Seasonality: 03:00",
+      "hypothesis": "Trading hour 03:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (60.6% frequency).",
+      "confidence_pct": 60.63,
+      "samples_n": 23426,
+      "status": "Supported",
+      "quality_score": 63.81
+    },
+    {
+      "knowledge_id": "KNOW_000047",
+      "title": "Cross-Symbol Behavior: SIT_ACCUMULATION_BEHAVIOUR",
+      "hypothesis": "Situation SIT_ACCUMULATION_BEHAVIOUR is present in NIFTY (6,346) and BANKNIFTY (5,119), indicating transferable dynamics.",
+      "confidence_pct": 80.66,
+      "samples_n": 11465,
+      "status": "Supported (Shared Pattern)",
+      "quality_score": 61.13
+    },
+    {
+      "knowledge_id": "KNOW_000049",
+      "title": "Cross-Symbol Behavior: SIT_DISTRIBUTION_BEHAVIOUR",
+      "hypothesis": "Situation SIT_DISTRIBUTION_BEHAVIOUR is present in NIFTY (3,974) and BANKNIFTY (5,161), indicating transferable dynamics.",
+      "confidence_pct": 77.0,
+      "samples_n": 9135,
+      "status": "Supported (Shared Pattern)",
+      "quality_score": 59.97
+    },
+    {
+      "knowledge_id": "KNOW_000028",
+      "title": "Regime Outcome: DOWNWARD_PRESSURE|EXPANDING|MODERATE_RETAIL|TRENDING|Sev3 in SIT_LONG_LIQUIDATION_PRESSURE",
+      "hypothesis": "Regime 'DOWNWARD_PRESSURE|EXPANDING|MODERATE_RETAIL|TRENDING|Sev3' combined with situation 'SIT_LONG_LIQUIDATION_PRESSURE' yields UPWARD bias with 100.0% confidence.",
+      "confidence_pct": 100.0,
+      "samples_n": 4027,
+      "status": "Supported (High-Probability Regime)",
+      "quality_score": 58.03
+    },
+    {
+      "knowledge_id": "KNOW_000051",
+      "title": "Cross-Symbol Behavior: SIT_LONG_LIQUIDATION_PRESSURE",
+      "hypothesis": "Situation SIT_LONG_LIQUIDATION_PRESSURE is present in NIFTY (2,164) and BANKNIFTY (1,863), indicating transferable dynamics.",
+      "confidence_pct": 86.09,
+      "samples_n": 4027,
+      "status": "Supported (Shared Pattern)",
+      "quality_score": 57.41
+    },
+    {
+      "knowledge_id": "KNOW_000021",
+      "title": "Contradiction Cluster: PCR_COLLAPSE_BELOW_THRESHOLD",
+      "hypothesis": "Contradiction cluster 'PCR_COLLAPSE_BELOW_THRESHOLD' exhibits 48.89% failure rate, triggered by 'Put-Call Ratio collapsed below 0.85 critical support threshold.'.",
+      "confidence_pct": 48.89,
+      "samples_n": 243,
+      "status": "Supported (Recovery Cluster)",
+      "quality_score": 57.39
+    },
+    {
+      "knowledge_id": "KNOW_000052",
+      "title": "Cross-Symbol Behavior: SIT_SHORT_COVERING_MOMENTUM",
+      "hypothesis": "Situation SIT_SHORT_COVERING_MOMENTUM is present in NIFTY (1,816) and BANKNIFTY (1,964), indicating transferable dynamics.",
+      "confidence_pct": 92.46,
+      "samples_n": 3780,
+      "status": "Supported (Shared Pattern)",
+      "quality_score": 57.29
+    },
+    {
+      "knowledge_id": "KNOW_000026",
+      "title": "Regime Outcome: UPWARD_DRIFT|STABLE|HIGH_INSTITUTIONAL|ACCUMULATION|Sev3 in SIT_ACCUMULATION_BEHAVIOUR",
+      "hypothesis": "Regime 'UPWARD_DRIFT|STABLE|HIGH_INSTITUTIONAL|ACCUMULATION|Sev3' combined with situation 'SIT_ACCUMULATION_BEHAVIOUR' yields UNCERTAIN_FLAT bias with 0.0% confidence.",
+      "confidence_pct": 0.0,
+      "samples_n": 0,
+      "status": "Weak (Uncertain Regime)",
+      "quality_score": 56.83
+    },
+    {
+      "knowledge_id": "KNOW_000020",
+      "title": "Contradiction Cluster: NONE",
+      "hypothesis": "Contradiction cluster 'NONE' exhibits 1.99% failure rate, triggered by 'No historical contradicting failure episodes found in top sample.'.",
+      "confidence_pct": 1.99,
+      "samples_n": 3,
+      "status": "Supported (Recovery Cluster)",
+      "quality_score": 56.53
+    },
+    {
+      "knowledge_id": "KNOW_000044",
+      "title": "Hourly Seasonality: 10:00",
+      "hypothesis": "Trading hour 10:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (50.6% frequency).",
+      "confidence_pct": 50.64,
+      "samples_n": 517,
+      "status": "Supported",
+      "quality_score": 54.41
+    },
+    {
+      "knowledge_id": "KNOW_000046",
+      "title": "Hourly Seasonality: 13:00",
+      "hypothesis": "Trading hour 13:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (74.6% frequency).",
+      "confidence_pct": 74.55,
+      "samples_n": 249,
+      "status": "Supported",
+      "quality_score": 54.23
+    },
+    {
+      "knowledge_id": "KNOW_000045",
+      "title": "Hourly Seasonality: 12:00",
+      "hypothesis": "Trading hour 12:00 is dominated by situation 'SIT_CONSOLIDATION_COMPRESSION' (54.7% frequency).",
+      "confidence_pct": 54.67,
+      "samples_n": 82,
+      "status": "Supported",
+      "quality_score": 54.19
+    },
+    {
+      "knowledge_id": "KNOW_000029",
+      "title": "Regime Outcome: UPWARD_DRIFT|EXPANDING|MODERATE_RETAIL|TRENDING|Sev3 in SIT_SHORT_COVERING_MOMENTUM",
+      "hypothesis": "Regime 'UPWARD_DRIFT|EXPANDING|MODERATE_RETAIL|TRENDING|Sev3' combined with situation 'SIT_SHORT_COVERING_MOMENTUM' yields UNCERTAIN_FLAT bias with 0.0% confidence.",
+      "confidence_pct": 0.0,
+      "samples_n": 0,
+      "status": "Weak (Uncertain Regime)",
+      "quality_score": 47.23
+    },
+    {
+      "knowledge_id": "KNOW_000010",
+      "title": "Confidence Range 40%-50% Calibration",
+      "hypothesis": "Engine confidence in range 40%-50% predicts 2.06% 5m positive outcomes.",
+      "confidence_pct": 2.06,
+      "samples_n": 107,
+      "status": "Refuted (Misleading/Uncalibrated)",
+      "quality_score": 43.6
+    },
+    {
+      "knowledge_id": "KNOW_000007",
+      "title": "Confidence Range 10%-20% Calibration",
+      "hypothesis": "Engine confidence in range 10%-20% predicts 93.14% 5m positive outcomes.",
+      "confidence_pct": 93.14,
+      "samples_n": 1304,
+      "status": "Refuted (Misleading/Uncalibrated)",
+      "quality_score": 41.7
+    },
+    {
+      "knowledge_id": "KNOW_000011",
+      "title": "Confidence Range 50%-60% Calibration",
+      "hypothesis": "Engine confidence in range 50%-60% predicts 98.4% 5m positive outcomes.",
+      "confidence_pct": 98.4,
+      "samples_n": 368,
+      "status": "Refuted (Misleading/Uncalibrated)",
+      "quality_score": 41.19
+    }
+  ]
+}

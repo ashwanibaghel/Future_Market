@@ -1,0 +1,41 @@
+{
+  "module_id": "MOD_04_STRIKE_SELECTION",
+  "module_name": "MOD_04_STRIKE_SELECTION",
+  "layer_name": "layer_3_planning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:49:52Z",
+  "schema_version": "2.0",
+  "model_filename": "model.constant",
+  "dataset_fingerprint": {
+    "train_sha256": "2ea62a4c7ef57d771cc7976218c06dcedc858ba72e1d3500e7740ec03dcee668",
+    "val_sha256": "57f9b8c846f95c01938e665c3b372b4787fa65d204a8d01c8146e1f3972c937a",
+    "test_sha256": "f487e506fdafd46f38e1136a913c15b9b5de4691c73033f7242b9b2f473c76df",
+    "manifest_sha256": "29f90fb27ee8bbcba8061ea89487f4179fc2047f8070e18cffe94e4573237547"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 0.0,
+    "hyperparameters": {
+      "policy": "deterministic_constant",
+      "constant_value": "ATM"
+    }
+  },
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "test_log_loss": 0.0,
+    "training_time_sec": 0.0
+  },
+  "feature_importance": {
+    "spot_price": 25.0,
+    "iv_skew": 25.0,
+    "option_delta": 25.0,
+    "expected_option_rr": 25.0
+  }
+}

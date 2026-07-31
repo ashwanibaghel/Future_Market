@@ -1,0 +1,11 @@
+{
+  "decision_id": "DS_NSE_INDEX_BANKNIFTY_20250926T051700_E2912B",
+  "reasoning_id": "REASON_NSE_INDEX_BANKNIFTY_20250926T051700_9921DB",
+  "synthesis_id": "SYN_NSE_INDEX_BANKNIFTY_20250926T051700_802DBF",
+  "situation_id": "SIT_CONSOLIDATION_COMPRESSION",
+  "snapshot_timestamp": "2025-09-26T05:17:00Z",
+  "software_version": "v1.0-phase1-freeze",
+  "constitution_version": "v1.0",
+  "pipeline_version": "v1.0",
+  "slogan": "Explain every assessment with evidence, uncertainty, and traceability."
+}

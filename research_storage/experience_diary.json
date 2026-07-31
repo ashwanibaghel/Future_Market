@@ -1,0 +1,104 @@
+[
+  {
+    "assessment_id": "ASSESS_PROD_001",
+    "timestamp": "2026-07-30T13:16:20Z",
+    "market_difficulty": {
+      "difficulty_score": 0.75,
+      "difficulty_label": "HARD",
+      "is_impossible_regime": false
+    },
+    "final_prediction": "BULL",
+    "actual_outcome": "BEAR_REVERSAL",
+    "pnl_pct": -0.015,
+    "reward_score": 0.7099,
+    "attribution_summary": {
+      "MOD_01_SITUATION_DISCOVERY": {
+        "correct": true,
+        "reliability_weight": 1.0,
+        "predicted_failure_risk": 0.0
+      },
+      "MOD_03_MARKET_DIRECTION": {
+        "correct": true,
+        "reliability_weight": 1.0,
+        "predicted_failure_risk": 0.0
+      },
+      "MOD_05_ENTRY_TIMING": {
+        "correct": false,
+        "reliability_weight": 0.9405,
+        "predicted_failure_risk": 1.0
+      },
+      "MOD_06_EXIT_TIMING": {
+        "correct": false,
+        "reliability_weight": 0.9405,
+        "predicted_failure_risk": 1.0
+      }
+    },
+    "lesson": "Trade evaluated in HARD regime. PnL: -0.015%. Reward: 0.7099."
+  },
+  {
+    "assessment_id": "ASSESS_PROD_001",
+    "timestamp": "2026-07-30T13:16:27Z",
+    "market_difficulty": {
+      "difficulty_score": 0.75,
+      "difficulty_label": "HARD",
+      "is_impossible_regime": false
+    },
+    "final_prediction": "BULL",
+    "actual_outcome": "BEAR_REVERSAL",
+    "pnl_pct": -0.015,
+    "reward_score": 0.7099,
+    "attribution_summary": {
+      "MOD_01_SITUATION_DISCOVERY": {
+        "correct": true,
+        "reliability_weight": 1.0,
+        "predicted_failure_risk": 0.0
+      },
+      "MOD_03_MARKET_DIRECTION": {
+        "correct": true,
+        "reliability_weight": 1.0,
+        "predicted_failure_risk": 0.0
+      },
+      "MOD_05_ENTRY_TIMING": {
+        "correct": false,
+        "reliability_weight": 0.8935,
+        "predicted_failure_risk": 1.0
+      },
+      "MOD_06_EXIT_TIMING": {
+        "correct": false,
+        "reliability_weight": 0.8935,
+        "predicted_failure_risk": 1.0
+      }
+    },
+    "lesson": "Trade evaluated in HARD regime. PnL: -0.015%. Reward: 0.7099."
+  },
+  {
+    "assessment_id": "ASSESS_PEER_001",
+    "timestamp": "2026-07-30T13:21:35Z",
+    "market_difficulty": {
+      "difficulty_score": 0.2,
+      "difficulty_label": "EASY",
+      "is_impossible_regime": false
+    },
+    "final_prediction": "BULL",
+    "actual_outcome": "BEAR_REVERSAL",
+    "decomposed_reward": 0.76,
+    "counterfactual": "If entry had been delayed by 3-5 minutes, market volatility shock would have passed, avoiding drawdowns.",
+    "attribution_summary": {
+      "MOD_01_SITUATION_DISCOVERY": {
+        "correct": true,
+        "reliability_weight": 1.0,
+        "predicted_failure_risk": 0.0
+      },
+      "MOD_03_MARKET_DIRECTION": {
+        "correct": true,
+        "reliability_weight": 1.0,
+        "predicted_failure_risk": 0.0
+      },
+      "MOD_05_ENTRY_TIMING": {
+        "correct": false,
+        "reliability_weight": 0.8488,
+        "predicted_failure_risk": 1.0
+      }
+    }
+  }
+]

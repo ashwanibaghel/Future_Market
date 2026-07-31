@@ -1,0 +1,43 @@
+{
+  "module_id": "MOD_07_HOLDING_TIME",
+  "module_name": "MOD_07_HOLDING_TIME",
+  "layer_name": "layer_3_planning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:51:20Z",
+  "schema_version": "2.0",
+  "model_filename": "model.cbm",
+  "dataset_fingerprint": {
+    "train_sha256": "8afb4ceacb87b974fac878796245b062d5520ea8ef19c6b32acb7271f93d74d7",
+    "val_sha256": "88d0526934f147d3596b0468e058462b3e88acd767c160ec26c9cb4cc9fcc2bc",
+    "test_sha256": "70a806215959f264cc9a4a6073efe3d7e30c5e2459b71f4bd5f8fdf28856cb89",
+    "manifest_sha256": "8b04163fd96a1c31789f17ac2fa7189ac88d1d9cf9422b25216fc51943ba0bcb"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 6.95,
+    "hyperparameters": {
+      "iterations": 250,
+      "depth": 6,
+      "learning_rate": 0.05,
+      "loss_function": "Logloss",
+      "verbose": 0,
+      "random_seed": 42
+    }
+  },
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "test_log_loss": 0.0001,
+    "training_time_sec": 6.95
+  },
+  "feature_importance": {
+    "time_decay_warning_minutes": 92.61,
+    "intraday_hour": 7.39
+  }
+}

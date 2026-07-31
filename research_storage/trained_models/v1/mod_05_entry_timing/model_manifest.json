@@ -1,0 +1,40 @@
+{
+  "module_id": "MOD_05_ENTRY_TIMING",
+  "module_name": "MOD_05_ENTRY_TIMING",
+  "layer_name": "layer_3_planning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:50:02Z",
+  "schema_version": "2.0",
+  "model_filename": "model.constant",
+  "dataset_fingerprint": {
+    "train_sha256": "8b74db68a8095a64091597f75d73d6109984487e9fcfb2073358610fd7d7b220",
+    "val_sha256": "4aaa1457dd62cc8fa1e207141c8e5e0acbcbce7cb02ae4ea5def45cfea9e7da7",
+    "test_sha256": "bf5dfd6f5959c1c0ad54d364f5eee2197cf87225c7efc0f8905b20fc4728b048",
+    "manifest_sha256": "5948b28f004a09695e7d7ef246b9a5dfc28b5226bf17e3eb708100a88d967e4e"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 0.0,
+    "hyperparameters": {
+      "policy": "deterministic_constant",
+      "constant_value": "False"
+    }
+  },
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "test_log_loss": 0.0,
+    "training_time_sec": 0.0
+  },
+  "feature_importance": {
+    "entry_confidence": 33.33,
+    "recommended_limit_price": 33.33,
+    "vwap_distance_pct": 33.33
+  }
+}

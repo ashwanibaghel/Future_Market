@@ -1,0 +1,37 @@
+# STEP 4.5 & 4.6 — KNOWLEDGE VALIDATION & STABILITY CONFIGURATION
+
+# Statistical Thresholds
+minimum_sample_size: 30
+minimum_support_pct: 2.0
+minimum_confidence_pct: 55.0
+minimum_reproducibility_score: 70.0
+rare_event_threshold_pct: 1.0
+
+# Negative Knowledge & Risk Classification
+negative_knowledge_failure_threshold_pct: 45.0
+
+# Multiple Testing Correction
+fdr_alpha: 0.05
+p_value_alpha: 0.05
+
+# Confidence Interval Configuration
+confidence_interval_method: "wilson"  # Options: "wilson", "clopper_pearson"
+
+# Temporal Split Configuration (Discovery vs Validation Replication)
+discovery_window_years: ["2021", "2022", "2023", "2024"]
+validation_window_years: ["2025", "2026"]
+
+# Quality Weights (Total = 1.0)
+quality_weights:
+  reliability: 0.25
+  statistical_strength: 0.25
+  stability: 0.20
+  reproducibility: 0.15
+  coverage: 0.10
+  novelty: 0.05
+
+# Paths
+input_dataset_dir: "E:/Future Stock/research_storage/market_intelligence_dataset"
+output_knowledge_dir: "E:/Future Stock/research_storage/knowledge_base/v1"
+output_validation_dir: "E:/Future Stock/research_storage/knowledge_base/v1/validation"
+reports_dir: "E:/Future Stock/research_storage/quality_reports"

@@ -1,0 +1,6 @@
+{
+  "spot_price": 25.0,
+  "iv_skew": 25.0,
+  "option_delta": 25.0,
+  "expected_option_rr": 25.0
+}

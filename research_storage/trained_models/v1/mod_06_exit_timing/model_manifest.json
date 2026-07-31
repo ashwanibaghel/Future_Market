@@ -1,0 +1,44 @@
+{
+  "module_id": "MOD_06_EXIT_TIMING",
+  "module_name": "MOD_06_EXIT_TIMING",
+  "layer_name": "layer_3_planning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:50:58Z",
+  "schema_version": "2.0",
+  "model_filename": "model.cbm",
+  "dataset_fingerprint": {
+    "train_sha256": "339cf780af8f640a9b5d399283ebf10d068f688d3a4b1e151a8f160eff4698d4",
+    "val_sha256": "6fcb37e37cae6aff8f868dc0c1282bcd484621d87c2e64e0d677136b78fd80bf",
+    "test_sha256": "774e388062ca10877419c9e3e23d2e0c22a569ea682e95b16fd9369aebccf73e",
+    "manifest_sha256": "8f23c1f5e5db8329e34930fb055b375c0d4c82a3fa57c804418be5f36e9d2335"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 47.0,
+    "hyperparameters": {
+      "iterations": 250,
+      "depth": 6,
+      "learning_rate": 0.05,
+      "loss_function": "MultiClass",
+      "verbose": 0,
+      "random_seed": 42
+    }
+  },
+  "metrics": {
+    "test_accuracy": 0.5595,
+    "test_macro_f1": 0.0897,
+    "test_log_loss": 0.0,
+    "training_time_sec": 47.0
+  },
+  "feature_importance": {
+    "spot_price": 53.09,
+    "atr_14": 0.0,
+    "trailing_stop_vwap": 46.91
+  }
+}

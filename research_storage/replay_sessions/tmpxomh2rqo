@@ -1,0 +1,23 @@
+[
+  {
+    "session_id": "SESS-PERF-001",
+    "symbol": "NIFTY",
+    "feature_version": "F-v1.0.0",
+    "replay_version": "R-v1.0.0",
+    "current_index": 1677,
+    "current_timestamp": "2021-03-01T09:56:00+05:30",
+    "total_snapshots": 15000,
+    "status": "RUNNING",
+    "last_updated": "2026-07-28T05:28:02.952790+00:00",
+    "config": {
+      "symbol": "NIFTY",
+      "start_date": "2021-03-01",
+      "end_date": "2021-03-31",
+      "feature_version": "F-v1.0.0",
+      "replay_version": "R-v1.0.0",
+      "replay_speed": 0.0,
+      "session_options": {},
+      "strategy_config": {}
+    }
+  }
+]

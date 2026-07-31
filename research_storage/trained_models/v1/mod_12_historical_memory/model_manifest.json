@@ -1,0 +1,43 @@
+{
+  "module_id": "MOD_12_HISTORICAL_MEMORY",
+  "module_name": "MOD_12_HISTORICAL_MEMORY",
+  "layer_name": "layer_1_perception",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:52:07Z",
+  "schema_version": "2.0",
+  "model_filename": "model.constant",
+  "dataset_fingerprint": {
+    "train_sha256": "e97fff22210ae390a56a42052b9422dfffb5843b01c4199a87826da0f6772554",
+    "val_sha256": "6d60e063913f50721b37c5cc2aa0c7ed702d9c7aafbca302ab29e81ceb915898",
+    "test_sha256": "f9f75849caacac76c95d43eb2d50606e162b32886bec75716c0708394d7aee21",
+    "manifest_sha256": "507f435e2542fb6950b5aabdcde0c21b2ae62e3899d3ff3b066b1a4c03989674"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 0.0,
+    "hyperparameters": {
+      "policy": "deterministic_constant",
+      "constant_value": "False"
+    }
+  },
+  "metrics": {
+    "test_accuracy": 1.0,
+    "test_macro_f1": 1.0,
+    "test_log_loss": 0.0,
+    "training_time_sec": 0.0
+  },
+  "feature_importance": {
+    "situation_id": 16.67,
+    "regime_id": 16.67,
+    "memory_embedding_vector_str": 16.67,
+    "nearest_historical_record_ids": 16.67,
+    "similarity_confidence_score": 16.67,
+    "historical_win_rate_pct": 16.67
+  }
+}

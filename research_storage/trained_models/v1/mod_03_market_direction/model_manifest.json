@@ -1,0 +1,47 @@
+{
+  "module_id": "MOD_03_MARKET_DIRECTION",
+  "module_name": "MOD_03_MARKET_DIRECTION",
+  "layer_name": "layer_2_reasoning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:46:23Z",
+  "schema_version": "2.0",
+  "model_filename": "model.cbm",
+  "dataset_fingerprint": {
+    "train_sha256": "691ae4a7e3ccf9a65092b77b9b6ab56a4712cbdc899be7b1a3ee0f60f562d5fa",
+    "val_sha256": "d79d841f539096237d3a4316d81bdca25a21bf56257936b174c625352e4f6254",
+    "test_sha256": "e34ce27ec50506f41ac62c03d900ae86254a6e180ff0ee5dc711e218e3c3bd67",
+    "manifest_sha256": "8fe3b072a46bc2e08d718f94096bda8a62910714e1bfe30274dc92bd083cdb82"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 5.3,
+    "hyperparameters": {
+      "iterations": 250,
+      "depth": 6,
+      "learning_rate": 0.05,
+      "loss_function": "Logloss",
+      "verbose": 0,
+      "random_seed": 42
+    }
+  },
+  "metrics": {
+    "test_accuracy": 0.8216,
+    "test_macro_f1": 0.451,
+    "test_log_loss": 0.4137,
+    "training_time_sec": 5.3
+  },
+  "feature_importance": {
+    "adx_14": 0.0,
+    "atr_14": 0.0,
+    "severity_level": 100.0,
+    "directional_confidence": 0.0,
+    "directional_uncertainty": 0.0,
+    "directional_reliability": 0.0
+  }
+}

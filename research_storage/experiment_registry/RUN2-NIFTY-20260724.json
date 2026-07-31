@@ -1,0 +1,12 @@
+{
+  "run_id": "RUN2-NIFTY-20260724",
+  "symbol": "NIFTY",
+  "start_time": "2026-07-24T09:15:00",
+  "end_time": "2026-07-24T09:24:00",
+  "total_ticks_evaluated": 10,
+  "signals_generated_count": 5,
+  "buy_call_count": 5,
+  "buy_put_count": 0,
+  "no_trade_count": 5,
+  "recorded_at_utc": "2026-07-27T16:54:33.102020+00:00"
+}

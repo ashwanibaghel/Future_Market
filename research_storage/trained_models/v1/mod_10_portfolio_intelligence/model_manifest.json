@@ -1,0 +1,45 @@
+{
+  "module_id": "MOD_10_PORTFOLIO_INTELLIGENCE",
+  "module_name": "MOD_10_PORTFOLIO_INTELLIGENCE",
+  "layer_name": "layer_2_reasoning",
+  "version": "v1.0.0",
+  "trained_at": "2026-07-29T20:47:09Z",
+  "schema_version": "2.0",
+  "model_filename": "model.lgb",
+  "dataset_fingerprint": {
+    "train_sha256": "01304fc22eb6c1a2796add1841c9e68d54727ee1bd438fadc14073485a23be88",
+    "val_sha256": "c2412dccc1409ea4d09ec480c9339525d3294273475c0488b95da6a134b5fabd",
+    "test_sha256": "93aa1014ef7d1bca6bb7e430dc59fd5dd727b5a67603e8d2334bc795e4e7d417",
+    "manifest_sha256": "e125bbe3c094abf309d10ea546685a924e11f5fa54162c5a5f4a0c14b0180ee8"
+  },
+  "training_fingerprint": {
+    "random_seed": 42,
+    "python_version": "3.11.5",
+    "os_system": "Windows",
+    "library_versions": {
+      "scikit-learn": "1.9.0",
+      "lightgbm": "4.7.0"
+    },
+    "training_duration_sec": 21.63,
+    "hyperparameters": {
+      "objective": "multiclass",
+      "num_class": 16,
+      "metric": "multi_logloss",
+      "boosting_type": "gbdt",
+      "learning_rate": 0.05,
+      "num_leaves": 31,
+      "verbose": -1,
+      "random_state": 42
+    }
+  },
+  "metrics": {
+    "test_accuracy": 0.5595,
+    "test_macro_f1": 0.1025,
+    "test_log_loss": 0.0,
+    "training_time_sec": 21.63
+  },
+  "feature_importance": {
+    "inter_market_beta": 61.26,
+    "portfolio_correlation_risk": 38.74
+  }
+}
